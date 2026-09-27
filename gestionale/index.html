@@ -686,6 +686,36 @@ function designOwner(pid, draft){
   pool.sort((a,b) => (a.date||'').localeCompare(b.date||'') || (a.number||'').localeCompare(b.number||''));
   return pool[0] ? pool[0].id : null;
 }
+const fmtStamp = iso => { const d = new Date(iso); return isNaN(d) ? '—' : d.toLocaleString('it-IT', {day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'}); };
+const FX_SOURCES = [
+  ['https://api.coinbase.com/v2/exchange-rates?currency=USD', j => j && j.data && j.data.rates && parseFloat(j.data.rates.EUR), 'Coinbase (tempo reale)'],
+  ['https://api.frankfurter.app/latest?from=USD&to=EUR', j => j && j.rates && j.rates.EUR, 'BCE via Frankfurter'],
+  ['https://open.er-api.com/v6/latest/USD', j => j && j.rates && j.rates.EUR, 'ExchangeRate-API']
+];
+async function refreshFx(manual){
+  if(readOnly) return false;
+  for(const [url, pick, src] of FX_SOURCES){
+    try {
+      const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), 8000);
+      const r = await fetch(url, {signal: ctl.signal, cache: 'no-store'}); clearTimeout(t);
+      if(!r.ok) continue;
+      const v = pick(await r.json());
+      if(!(v > 0.5 && v < 1.5)) continue;
+      S.settings.usdEur = Math.round(v * 10000) / 10000; S.settings.usdEurAt = new Date().toISOString(); S.settings.usdEurSrc = src;
+      await saveSettings(); render();
+      if(manual) toast(`Cambio aggiornato: 1 $ = ${dec(S.settings.usdEur, 4)} €`);
+      return true;
+    } catch(e) {}
+  }
+  if(manual) toast('Non riesco a collegarmi al sito del cambio da qui: resta il valore attuale.');
+  return false;
+}
+function fxDue(){ const at = Date.parse(S.settings.usdEurAt || ''); return !(at > 0) || Date.now() - at >= 3600e3; }
+function startFxTimer(){
+  if(mode !== 'local') return;
+  const tick = () => { if(fxDue()) refreshFx(false); };
+  tick(); setInterval(tick, 10 * 60e3);
+}
 function autoShip(zone, kg){
   const list = S.shipping.filter(r => (r.zone || 'Italia') === zone).sort((a,b) => (n(a.maxKg) || 1e9) - (n(b.maxKg) || 1e9));
   if(!list.length) return {rate:null, parcels:1};
@@ -806,7 +836,7 @@ async function boot(){
       ready('settings');
     }, onErr);
   } else {
-    mode = 'local'; loadLocal(); loaded = true;
+    mode = 'local'; loadLocal(); loaded = true; startFxTimer();
     setChip('', 'Salvato su questo dispositivo');
     render();
   }
@@ -1041,7 +1071,8 @@ function vSettings(){
       ${f('Commissione pagamenti','feePct','%','Carta, PayPal, piattaforma e-commerce')}
       ${f('Commissione fissa','feeFixed','€','Per ogni transazione')}
       ${f('Spedizione gratis da','freeShipOver','€','Totale ordine IVA incl.; 0 = mai')}
-      ${f('Cambio: 1 dollaro =','usdEur','€','Per acquisti e trasporti in $; aggiornalo quando paghi')}
+      ${f('Cambio: 1 dollaro =','usdEur','€', st.usdEurAt ? `Aggiornato ${fmtStamp(st.usdEurAt)}${st.usdEurSrc ? ' · ' + h(st.usdEurSrc) : ''}` : 'Inserito a mano')}
+      <div class="fld"><span>Aggiornamento del cambio</span><div class="actions"><button class="btn sm" data-act="fx-now" ${readOnly?'disabled':''}>Aggiorna ora</button></div><span class="hint">${mode === 'cloud' ? 'Online si aggiorna ogni ora con un\'attività programmata; il pulsante funziona se la pagina può collegarsi al sito del cambio.' : 'Ogni ora, finché la pagina è aperta.'}</span></div>
     </div></div></section>
     <section class="panel"><div class="panel-head"><h2>Archivio dati</h2></div><div class="panel-body">
       <p style="margin:0 0 12px;color:var(--ink-2);font-size:14px">${mode==='cloud' ? 'I dati sono salvati nel cloud di questo artifact: li ritrovi da qualsiasi dispositivo con cui lo apri.' : 'I dati sono salvati nel browser di questo dispositivo. Esporta un backup regolarmente.'}</p>
@@ -1092,6 +1123,7 @@ document.addEventListener('click', async e => {
     case 'new-supplier': return openSupplier(null);
     case 'new-ship': return openShip(null);
     case 'new-freight': return openFreight(null);
+    case 'fx-now': t.disabled = true; await refreshFx(true); t.disabled = false; return;
     case 'new-purchase': return openPurchase(null);
     case 'export-csv': return exportCSV();
     case 'export-json': return offerFile('tempra-backup-' + today() + '.json', JSON.stringify(S, null, 2));
