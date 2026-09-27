@@ -22,6 +22,7 @@ mostrano sempre in alto costo, utile e margine.
 | Catalogo | Le 17 categorie (FC·01–FC·12, PD·01–PD·12) con i modelli; per ogni modello: acquisto, lotto, trasporto, dazi, packaging, personalizzazioni di serie, prezzo, grado BASE/PRO/ELITE, giacenza |
 | Personalizzazioni | Listino lavorazioni (stampa, ricamo, sublimazione, DTF, incisione…): costo al pezzo, impianto una tantum, prezzo al cliente, categorie su cui si applicano |
 | Ordini e preventivi | Righe con modello, pezzi, prezzo squadra e personalizzazioni; spedizione, sconto, totale cliente, costi e utile in tempo reale |
+| Acquisti | Ordini ai fornitori: da ordinare / ordinato / in produzione / in viaggio / arrivato; merce, peso, trasporto, altri costi, acconto e residuo da pagare. "Arrivato" carica i pezzi in magazzino |
 | Fornitori | Paese, tempi di consegna, minimi d'ordine, pagamento, modelli collegati |
 | Spedizioni | Import dalla fabbrica (tariffe al kg in $, resa DDU/DDP, spese fisse di sdoganamento) e corrieri verso il cliente (costo, prezzo, soglia di spedizione gratuita) |
 | Impostazioni | IVA, margine target, commissioni di pagamento, soglia spedizione gratis, cambio dollaro/euro, categorie aggiuntive, backup/import, export CSV |

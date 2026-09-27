@@ -132,7 +132,10 @@ main{padding-block:26px 80px}
 .st.Preventivo{background:var(--steel-soft);color:var(--steel)}
 .st.Confermato,.st.In-produzione{background:var(--warn-bg);color:var(--warn)}
 .st.Spedito,.st.Consegnato{background:var(--good-bg);color:var(--good)}
-.st.Annullato{background:var(--surface-2);color:var(--muted);text-decoration:line-through}
+.st.p-Da-ordinare{background:var(--bad-bg);color:var(--bad)}
+.st.p-Ordinato,.st.p-In-produzione,.st.p-In-viaggio{background:var(--warn-bg);color:var(--warn)}
+.st.p-Arrivato{background:var(--good-bg);color:var(--good)}
+.st.p-Annullato,.st.Annullato{background:var(--surface-2);color:var(--muted);text-decoration:line-through}
 
 /* Banners */
 .banner{display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px;padding:12px 16px;border-radius:4px;margin-bottom:18px;background:var(--surface);border:1px solid var(--line)}
@@ -426,7 +429,9 @@ const METHODS = ['Stampa termica','Ricamo','Sublimazione','DTF','Serigrafia','Tr
 const STATUSES = ['Preventivo','Confermato','In produzione','Spedito','Consegnato','Annullato'];
 const SOLD = ['Confermato','In produzione','Spedito','Consegnato'];
 const CHANNELS = ['Sito web','Instagram','Squadra','Circolo / club','Negozio','Marketplace','Altro'];
-const COLS = ['products','customs','suppliers','shipping','freight','orders'];
+const COLS = ['products','customs','suppliers','shipping','freight','orders','purchases'];
+const PSTATUS = ['Da ordinare','Ordinato','In produzione','In viaggio','Arrivato','Annullato'];
+const INCOMING = ['Ordinato','In produzione','In viaggio'];
 const DEF_SETTINGS = {iva:22, feePct:1.5, feeFixed:0.25, targetMargin:45, freeShipOver:79, usdEur:0.88, defaultFreight:'fr-mare', extraCats:[]};
 const LS_KEY = 'tempra-gestionale-v1';
 
@@ -492,11 +497,17 @@ function sampleData(){
       P('p-pd11','asciugamano','Asciugamano PD·11','TMP-PD11-L','BASE','Lama · Forgia','40 × 90 cm','f-accessori',3.2,100,50,0,0.3,['c-logo-ricamo'],19.9,'s-it-s',40,'Microfibra ad asciugatura rapida.'),
       P('p-pd12','grip','Overgrip PD·12 (conf. 3)','TMP-PD12','BASE','Lama','3 pz','f-accessori',1.1,200,30,0,0.1,[],8.9,'s-it-s',100,'Perforato, spessore 0,6 mm.')
     ],
+    purchases:[
+      {id:'a-0001',number:'ACQ-0001',supplier:'f-padel',date:'2026-09-20',status:'Da ordinare',freightId:'fr-mare',expected:'',extraCost:0,deposit:0,notes:'Riassortimento borse e cover per la stagione invernale.',
+        items:[{pid:'p-pd04',qty:50,cost:16,currency:'EUR'},{pid:'p-pd02',qty:100,cost:4.5,currency:'EUR'}],sample:true},
+      {id:'a-0002',number:'ACQ-0002',supplier:'f-tessile',date:'2026-09-05',status:'In viaggio',freightId:'',expected:'2026-10-08',extraCost:40,deposit:400,notes:'Kit gara: 100 maglie e 100 pantaloncini.',
+        items:[{pid:'p-fc01',qty:100,cost:7.2,currency:'EUR'},{pid:'p-fc02',qty:100,cost:5.1,currency:'EUR'}],sample:true}
+    ],
     orders:[
       {id:'o-0001',number:'TMP-0001',date:'2026-09-10',customer:'Squadra esempio · Juniores',channel:'Squadra',status:'Confermato',shipId:'s-it-l',parcels:1,shipCharged:0,discountPct:0,notes:'Kit gara per 18 giocatori, consegna prima dell\'inizio del campionato.',
         items:[{pid:'p-fc01',qty:18,price:36,customs:['c-nome','c-numero','c-logo-squadra']},{pid:'p-fc02',qty:18,price:24,customs:['c-numero-short']},{pid:'p-fc03',qty:18,price:13,customs:[]}],sample:true},
       {id:'o-0002',number:'TMP-0002',date:'2026-09-18',customer:'Cliente esempio · sito',channel:'Sito web',status:'Spedito',shipId:'s-it-m',parcels:1,shipCharged:0,discountPct:0,notes:'Spedizione gratuita (sopra soglia).',
-        items:[{pid:'p-pd01f',qty:1,price:189,customs:['c-incisione']},{pid:'p-pd03',qty:2,price:7.9,customs:[]}],sample:true},
+        items:[{pid:'p-pd04',qty:1,price:69,customs:['c-nome-borsa']},{pid:'p-pd03',qty:2,price:7.9,customs:[]}],sample:true},
       {id:'o-0003',number:'TMP-0003',date:'2026-09-24',customer:'Circolo padel esempio',channel:'Circolo / club',status:'Preventivo',shipId:'s-ritiro',parcels:1,shipCharged:0,discountPct:5,notes:'Divise maestri e staff con logo del circolo.',
         items:[{pid:'p-pd05',qty:12,price:32,customs:['c-logo-squadra']},{pid:'p-pd09',qty:12,price:15,customs:['c-logo-squadra']}],sample:true}
     ]
@@ -507,14 +518,14 @@ function sampleData(){
 }
 
 /* ---------- Stato ---------- */
-const S = {settings:{...DEF_SETTINGS}, products:[], customs:[], suppliers:[], shipping:[], freight:[], orders:[]};
+const S = {settings:{...DEF_SETTINGS}, products:[], customs:[], suppliers:[], shipping:[], freight:[], orders:[], purchases:[]};
 let mode = 'local';     // 'cloud' | 'local'
 let db = null;
 let readOnly = false;
 let loaded = false;
 let settingsExists = false;
 let view = 'dashboard';
-const ui = {line:'all', q:'', orderStatus:'all'};
+const ui = {line:'all', q:'', orderStatus:'all', pStatus:'open'};
 
 /* ---------- Utility ---------- */
 const $ = (s, r=document) => r.querySelector(s);
@@ -578,6 +589,31 @@ function status(c){
   if(c.profit < 0) return {cls:'bad', label:'▼ In perdita'};
   if(c.margin < n(S.settings.targetMargin)/100) return {cls:'warn', label:'▲ Sotto target'};
   return {cls:'ok', label:'● In target'};
+}
+function arrivedQty(pid, st){
+  let q = 0;
+  S.purchases.forEach(a => { if(st ? st.includes(a.status) : a.status === 'Arrivato') (a.items||[]).forEach(it => { if(it.pid === pid) q += n(it.qty); }); });
+  return q;
+}
+const incomingQty = pid => arrivedQty(pid, INCOMING);
+const loadedQty = p => n(p.stock) + arrivedQty(p.id);
+const avail = p => loadedQty(p) - soldQty(p.id);
+function purchaseCalc(a){
+  const fx = n(S.settings.usdEur) || 1;
+  const fr = a.freightId ? byId('freight', a.freightId) : null;
+  let goods = 0, weight = 0, freight = 0, pieces = 0, missingKg = 0;
+  (a.items || []).forEach(it => {
+    const p = byId('products', it.pid); const qty = n(it.qty);
+    goods += qty * n(it.cost) * (it.currency === 'USD' ? fx : 1); pieces += qty;
+    if(p){ weight += qty * n(p.weightKg); if(!n(p.weightKg)) missingKg += qty;
+      const pf = fr || productFreight(p);
+      if(pf) freight += qty * n(p.weightKg) * n(pf.usdPerKg) * fx;
+      else freight += qty * n(p.lotShip) / Math.max(1, n(p.lotQty) || 1); }
+  });
+  const trf = fr || (a.items && a.items[0] && byId('products', a.items[0].pid) ? productFreight(byId('products', a.items[0].pid)) : null);
+  if(trf && n(trf.fixedEur)) freight += n(trf.fixedEur);
+  const total = goods + freight + n(a.extraCost);
+  return {goods, weight, freight, pieces, missingKg, total, due: total - n(a.deposit), tr: trf};
 }
 function soldQty(pid){
   let q = 0;
@@ -725,10 +761,22 @@ async function writeAll(data){
   persistLocal(); render(); return true;
 }
 
+async function restoreSample(){
+  const data = sampleData(); let added = 0;
+  if(!settingsExists){ S.settings = {...data.settings, ...S.settings}; await saveSettings(); }
+  for(const c of COLS){
+    for(const d of (data[c] || [])){
+      if(S[c].some(x => x.id === d.id)) continue;
+      upsertLocal(c, d); added++;
+      if(mode === 'cloud'){ try { await queued(c + '/' + d.id, () => db.collection(c).doc(d.id).set(d)); } catch(e){ writeFailed(e); return; } }
+    }
+  }
+  persistLocal(); render(); toast(added ? `${added} elementi di esempio ripristinati` : 'I dati di esempio sono già tutti presenti');
+}
 async function boot(){
   try { const v = localStorage.getItem('tempra-view'); if(v) view = v; } catch(e) {}
   const hash = location.hash.replace('#','');
-  if(['dashboard','catalogo','personalizzazioni','ordini','fornitori','spedizioni','impostazioni'].includes(hash)) view = hash;
+  if(['dashboard','catalogo','personalizzazioni','ordini','acquisti','fornitori','spedizioni','impostazioni'].includes(hash)) view = hash;
   renderTabs();
   if(window.claude && typeof window.claude.use === 'function'){
     try { db = await window.claude.use('db'); } catch(e){ db = null; }
@@ -759,16 +807,17 @@ async function boot(){
 }
 
 /* ---------- Navigazione ---------- */
-const VIEWS = [['dashboard','Dashboard'],['catalogo','Catalogo'],['personalizzazioni','Personalizzazioni'],['ordini','Ordini e preventivi'],['fornitori','Fornitori'],['spedizioni','Spedizioni'],['impostazioni','Impostazioni']];
+const VIEWS = [['dashboard','Dashboard'],['catalogo','Catalogo'],['personalizzazioni','Personalizzazioni'],['ordini','Ordini e preventivi'],['acquisti','Acquisti'],['fornitori','Fornitori'],['spedizioni','Spedizioni'],['impostazioni','Impostazioni']];
 const ICONS = {
   dashboard:'<path d="M4 13h6V4H4zM14 20h6v-9h-6zM4 20h6v-4H4zM14 7h6V4h-6z"/>',
   catalogo:'<path d="M8 3 4 6l2 4 2-1v12h8V9l2 1 2-4-4-3h-2.5a2.5 2.5 0 0 1-5 0z"/>',
   ordini:'<path d="M9 4h6v3H9z"/><path d="M15 5h3v16H6V5h3"/><path d="M9 12h6M9 16h4"/>',
   personalizzazioni:'<path d="M5 19 16.5 7.5l-2-2L3 17v2z"/><path d="m14.5 5.5 2-2 4 4-2 2"/>',
+  acquisti:'<path d="M3 7h11v9H3zM14 10h4l3 3v3h-7"/><circle cx="7" cy="17.5" r="1.7"/><circle cx="17" cy="17.5" r="1.7"/>',
   altro:'<circle cx="5" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="19" cy="12" r="1.3"/>'
 };
-const BNAV = [['dashboard','Home'],['catalogo','Catalogo'],['ordini','Ordini'],['personalizzazioni','Lavorazioni'],['altro','Altro']];
-const MORE = [['spedizioni','Spedizioni e import'],['fornitori','Fornitori'],['impostazioni','Impostazioni']];
+const BNAV = [['dashboard','Home'],['catalogo','Catalogo'],['ordini','Ordini'],['acquisti','Acquisti'],['altro','Altro']];
+const MORE = [['personalizzazioni','Personalizzazioni'],['spedizioni','Spedizioni e import'],['fornitori','Fornitori'],['impostazioni','Impostazioni']];
 function renderTabs(){
   $('#tabs').innerHTML = VIEWS.map(([k,l]) => `<button class="tab" data-view="${k}" ${k===view?'aria-current="page"':''}>${l}</button>`).join('');
   const inMore = MORE.some(([k]) => k === view);
@@ -789,7 +838,7 @@ document.addEventListener('pointerdown', e => { if(!e.target.closest('#more-menu
 function render(){
   if(!loaded){ return; }
   const main = $('#main');
-  const fn = {dashboard:vDashboard, catalogo:vCatalog, personalizzazioni:vCustoms, ordini:vOrders, fornitori:vSuppliers, spedizioni:vShipping, impostazioni:vSettings}[view] || vDashboard;
+  const fn = {dashboard:vDashboard, catalogo:vCatalog, personalizzazioni:vCustoms, ordini:vOrders, acquisti:vPurchases, fornitori:vSuppliers, spedizioni:vShipping, impostazioni:vSettings}[view] || vDashboard;
   const a = document.activeElement;
   const fid = a && main.contains(a) && a.id ? a.id : null;
   let sel = null; try { sel = [a.selectionStart, a.selectionEnd]; } catch(e) {}
@@ -817,7 +866,7 @@ function vDashboard(){
   const quotes = S.orders.filter(o => o.status === 'Preventivo');
   const qVal = quotes.reduce((a,o) => a + orderCalc(o).total, 0);
   let stockVal = 0, stockPcs = 0;
-  S.products.forEach(p => { const av = Math.max(0, n(p.stock) - soldQty(p.id)); stockVal += av * unitCost(p).total; stockPcs += av; });
+  S.products.forEach(p => { const av = Math.max(0, avail(p)); stockVal += av * unitCost(p).total; stockPcs += av; });
   const rows = S.products.map(p => ({p, c: priceCalc(p)})).filter(r => r.c.price > 0);
   const avgMargin = rows.length ? rows.reduce((a,r) => a + (Number.isFinite(r.c.margin) ? r.c.margin : 0), 0) / rows.length : NaN;
   rows.sort((a,b) => a.c.margin - b.c.margin);
@@ -830,7 +879,7 @@ function vDashboard(){
       <div class="track"><div class="fill" style="width:${w}%"></div><div class="tick" style="left:${(target/maxM*100).toFixed(2)}%"></div></div>
       <div class="m-val num">${pct(r.c.margin)}</div><span class="pill ${s.cls}">${s.label}</span></div>`;
   }).join('') || '<p class="muted">Nessun modello con prezzo di vendita.</p>';
-  const reorder = S.products.map(p => ({p, av: n(p.stock) - soldQty(p.id)})).filter(r => r.av <= n(r.p.reorder ?? 5)).sort((a,b) => a.av - b.av);
+  const reorder = S.products.map(p => ({p, av: avail(p), inc: incomingQty(p.id)})).filter(r => r.av + r.inc <= n(r.p.reorder ?? 5)).sort((a,b) => a.av - b.av);
   const recent = S.orders.slice().sort((a,b) => (b.date||'').localeCompare(a.date||'')).slice(0,6);
   const emptyCats = allCats().filter(c => !S.products.some(p => p.cat === c.id));
   return `${emptyCloud()}${sampleBanner()}
@@ -848,7 +897,7 @@ function vDashboard(){
       <div class="panel-body"><div class="meter-list">${meters}</div><p class="help">Ordinati dal più basso. Margine = utile ÷ prezzo senza IVA, dopo costi di acquisto, trasporto, dazi, packaging, personalizzazioni di serie e commissioni di pagamento.</p></div></section>
     <div style="display:flex;flex-direction:column;gap:18px">
       <section class="panel"><div class="panel-head"><h2>Da riordinare</h2><span class="muted" style="font-size:13px">disponibili ≤ soglia</span></div><div class="panel-body"><div class="list">
-        ${reorder.map(r => `<div class="li" data-open-product="${h(r.p.id)}"><div class="grow"><b>${h(r.p.name)}</b><small>${h(catOf(r.p.cat).code)} · soglia ${n(r.p.reorder ?? 5)} · lotto ${n(r.p.lotQty)||1} pz</small></div><span class="num ${r.av<=0?'low':''}">${r.av} pz</span></div>`).join('') || '<p class="muted">Tutto in magazzino sopra soglia.</p>'}
+        ${reorder.map(r => `<div class="li" data-open-product="${h(r.p.id)}"><div class="grow"><b>${h(r.p.name)}</b><small>${h(catOf(r.p.cat).code)} · soglia ${n(r.p.reorder ?? 5)} · lotto ${n(r.p.lotQty)||1} pz${r.inc ? ` · ${r.inc} in arrivo` : ''}</small></div><span class="num ${r.av<=0?'low':''}">${r.av} pz</span></div>`).join('') || '<p class="muted">Tutto in magazzino sopra soglia.</p>'}
       </div></div></section>
       <section class="panel"><div class="panel-head"><h2>Ultimi ordini</h2><button class="btn ghost sm" data-go="ordini">Tutti</button></div><div class="panel-body"><div class="list">
         ${recent.map(o => { const c = orderCalc(o); return `<div class="li" data-open-order="${h(o.id)}"><div class="grow"><b>${h(o.customer||'Senza cliente')}</b><small class="mono">${h(o.number)} · ${fmtDate(o.date)} · ${c.pieces} pz</small></div><span class="st ${h((o.status||'').replace(/ /g,'-'))}">${h(o.status)}</span><span class="num">${eur(c.total)}</span></div>`; }).join('') || '<p class="muted">Ancora nessun ordine.</p>'}
@@ -865,7 +914,7 @@ function vCatalog(){
     const prods = S.products.filter(p => p.cat === c.id && (!q || [p.name,p.sku,p.colorway,p.specs].join(' ').toLowerCase().includes(q)));
     if(q && !prods.length) return '';
     const rows = prods.map(p => {
-      const pc = priceCalc(p), s = status(pc), av = n(p.stock) - soldQty(p.id);
+      const pc = priceCalc(p), s = status(pc), av = avail(p);
       return `<button class="row" data-open-product="${h(p.id)}">
         <span class="r-name"><b>${h(p.name)}</b><small>${h(p.sku||'—')} · ${n(p.weightKg) ? fmtKg(p.weightKg, p.weightUnit) : '<span style="color:var(--bad)">peso mancante</span>'}</small></span>
         <span class="r-grade"><span class="grade ${h(p.grade||'BASE')}">${h(p.grade||'BASE')}</span></span>
@@ -914,6 +963,30 @@ function vOrders(){
   <div class="actions"><button class="btn primary" data-act="new-order" ${readOnly?'disabled':''}>Nuovo preventivo</button></div></div>
   <div class="filters"><div class="seg scroll" role="group" aria-label="Stato">${[['all','Tutti']].concat(STATUSES.map(s=>[s,s])).map(([k,l]) => `<button data-ostatus="${h(k)}" aria-pressed="${ui.orderStatus===k}">${h(l)}</button>`).join('')}</div></div>
   <div class="tbl-wrap cardify"><table class="tbl"><thead><tr><th>N.</th><th>Data</th><th>Cliente</th><th class="r">Pezzi</th><th class="r">Totale</th><th class="r">Utile</th><th class="r">Margine</th><th>Stato</th></tr></thead><tbody>${rows || '<tr><td colspan="8" class="muted">Nessun ordine in questo stato.</td></tr>'}</tbody></table></div>`;
+}
+
+function vPurchases(){
+  const open = S.purchases.filter(a => !['Arrivato','Annullato'].includes(a.status));
+  const sumBy = list => list.reduce((t,a) => t + purchaseCalc(a).total, 0);
+  const todo = S.purchases.filter(a => a.status === 'Da ordinare'), incoming = S.purchases.filter(a => INCOMING.includes(a.status));
+  const due = open.filter(a => a.status !== 'Da ordinare').reduce((t,a) => t + purchaseCalc(a).due, 0);
+  const list = S.purchases.filter(a => ui.pStatus === 'all' || (ui.pStatus === 'open' ? !['Arrivato','Annullato'].includes(a.status) : a.status === ui.pStatus))
+    .sort((a,b) => PSTATUS.indexOf(a.status) - PSTATUS.indexOf(b.status) || (b.date||'').localeCompare(a.date||''));
+  const rows = list.map(a => { const c = purchaseCalc(a), f = byId('suppliers', a.supplier);
+    return `<tr data-open-purchase="${h(a.id)}"><td class="mono" data-label="Numero" style="white-space:nowrap">${h(a.number)}</td><td class="num" data-label="Data">${fmtDate(a.date)}</td>
+      <td class="t-main"><b>${h(f ? f.name : 'Fornitore non indicato')}</b><div class="muted" style="font-size:12.5px">${(a.items||[]).map(it => h((byId('products', it.pid)||{name:'?'}).name) + ' ×' + n(it.qty)).join(' · ')}</div></td>
+      <td class="r num" data-label="Pezzi">${c.pieces}</td><td class="r num" data-label="Peso">${dec(c.weight,1)} kg</td><td class="r num" data-label="Totale">${eur(c.total)}</td><td class="r num" data-label="Da pagare">${eur(c.due)}</td>
+      <td data-label="Arrivo" class="num">${a.status === 'Arrivato' ? 'arrivato' : (a.expected ? fmtDate(a.expected) : h((c.tr && c.tr.transitDays) || '—'))}</td>
+      <td data-label="Stato"><span class="st p-${h(a.status.replace(/ /g,'-'))}">${h(a.status)}</span></td></tr>`; }).join('');
+  return `${sampleBanner()}<div class="view-head"><div><p class="eyebrow">Ordini ai fornitori</p><h1>Acquisti</h1><p class="lead">Segna cosa devi ordinare e cosa hai già ordinato: merce, peso, trasporto e quanto resta da pagare. Quando imposti "Arrivato", i pezzi entrano in magazzino da soli.</p></div>
+  <div class="actions"><button class="btn primary" data-act="new-purchase" ${readOnly?'disabled':''}>Nuovo ordine fornitore</button></div></div>
+  <div class="kpis">
+    <div class="kpi dark"><span class="kpi-label">Da ordinare</span><span class="kpi-value">${eur(sumBy(todo))}</span><span class="kpi-sub">${todo.length} ${todo.length === 1 ? 'ordine' : 'ordini'} da inviare</span></div>
+    <div class="kpi"><span class="kpi-label">In arrivo</span><span class="kpi-value">${eur(sumBy(incoming))}</span><span class="kpi-sub">${incoming.reduce((t,a) => t + purchaseCalc(a).pieces, 0)} pezzi ordinati</span></div>
+    <div class="kpi"><span class="kpi-label">Ancora da pagare</span><span class="kpi-value">${eur(due)}</span><span class="kpi-sub">su ordini già inviati</span></div>
+  </div>
+  <div class="filters"><div class="seg scroll" role="group" aria-label="Stato">${[['open','Aperti'],['all','Tutti']].concat(PSTATUS.map(x=>[x,x])).map(([k,l]) => `<button data-pstatus="${h(k)}" aria-pressed="${ui.pStatus===k}">${h(l)}</button>`).join('')}</div></div>
+  <div class="tbl-wrap cardify"><table class="tbl"><thead><tr><th>N.</th><th>Data</th><th>Fornitore e articoli</th><th class="r">Pezzi</th><th class="r">Peso</th><th class="r">Totale</th><th class="r">Da pagare</th><th>Arrivo</th><th>Stato</th></tr></thead><tbody>${rows || '<tr><td colspan="9" class="muted">Nessun ordine fornitore in questo elenco.</td></tr>'}</tbody></table></div>`;
 }
 
 function vSuppliers(){
@@ -967,8 +1040,9 @@ function vSettings(){
     <section class="panel"><div class="panel-head"><h2>Archivio dati</h2></div><div class="panel-body">
       <p style="margin:0 0 12px;color:var(--ink-2);font-size:14px">${mode==='cloud' ? 'I dati sono salvati nel cloud di questo artifact: li ritrovi da qualsiasi dispositivo con cui lo apri.' : 'I dati sono salvati nel browser di questo dispositivo. Esporta un backup regolarmente.'}</p>
       <div class="actions"><button class="btn" data-act="export-json">Esporta backup (JSON)</button><button class="btn" data-act="export-csv">Esporta catalogo (CSV)</button>
+      <button class="btn" data-act="load-sample" ${readOnly?'disabled':''}>Rimetti i dati di esempio</button>
       <label class="btn" ${readOnly?'style="opacity:.45;pointer-events:none"':''}>Importa backup<input type="file" id="import-file" accept=".json,application/json" hidden></label></div>
-      <p class="help">L'import aggiunge o aggiorna i record con lo stesso codice interno; non cancella quelli che non sono nel file.</p>
+      <p class="help">"Rimetti i dati di esempio" aggiunge solo gli esempi che mancano: i tuoi modelli e ordini non vengono toccati. L'import aggiunge o aggiorna i record con lo stesso codice interno; non cancella quelli che non sono nel file.</p>
       <div id="export-fallback"></div>
     </div></section>
     <section class="panel"><div class="panel-head"><h2>Categorie aggiuntive</h2></div><div class="panel-body">
@@ -989,7 +1063,7 @@ function vSettings(){
 
 /* ---------- Eventi pagina ---------- */
 document.addEventListener('click', async e => {
-  const t = e.target.closest('[data-open-product],[data-open-order],[data-open-custom],[data-open-supplier],[data-open-ship],[data-open-freight],[data-act],[data-new-in],[data-line],[data-ostatus],[data-go],[data-del-cat]');
+  const t = e.target.closest('[data-open-product],[data-open-order],[data-open-custom],[data-open-supplier],[data-open-ship],[data-open-freight],[data-open-purchase],[data-pstatus],[data-act],[data-new-in],[data-line],[data-ostatus],[data-go],[data-del-cat]');
   if(!t || t.closest('#sheet')) return;
   const d = t.dataset;
   if(d.openProduct) return openProduct(d.openProduct);
@@ -998,6 +1072,8 @@ document.addEventListener('click', async e => {
   if(d.openSupplier) return openSupplier(d.openSupplier);
   if(d.openShip) return openShip(d.openShip);
   if(d.openFreight) return openFreight(d.openFreight);
+  if(d.openPurchase) return openPurchase(d.openPurchase);
+  if(d.pstatus){ ui.pStatus = d.pstatus; return render(); }
   if(d.newIn) return openProduct(null, d.newIn);
   if(d.line){ ui.line = d.line; return render(); }
   if(d.ostatus){ ui.orderStatus = d.ostatus; return render(); }
@@ -1010,10 +1086,11 @@ document.addEventListener('click', async e => {
     case 'new-supplier': return openSupplier(null);
     case 'new-ship': return openShip(null);
     case 'new-freight': return openFreight(null);
+    case 'new-purchase': return openPurchase(null);
     case 'export-csv': return exportCSV();
     case 'export-json': return offerFile('tempra-backup-' + today() + '.json', JSON.stringify(S, null, 2));
     case 'clear-sample': return armThen(t, 'Conferma: elimina esempi', clearSample);
-    case 'load-sample': t.disabled = true; await writeAll(sampleData()); return toast('Catalogo di esempio caricato');
+    case 'load-sample': t.disabled = true; return restoreSample();
     case 'start-empty': t.disabled = true; await saveSettings(); render(); return toast('Pronto: inizia dal catalogo');
     case 'add-cat': {
       const code = $('#nc-code').value.trim(), name = $('#nc-name').value.trim(), line = $('#nc-line').value;
@@ -1076,8 +1153,8 @@ function showCopyFallback(filename, text){
 function exportCSV(){
   const head = ['Categoria','Codice','Linea','Modello','SKU','Grado','Colorway','Taglie/formato','Fornitore','Prezzo acquisto','Trasporto/pz','Dazi/pz','Packaging/pz','Personalizzazioni di serie/pz','Costo pieno','Prezzo vendita IVA incl.','Prezzo netto','Commissioni','Utile/pz','Margine %','Prezzo consigliato','Giacenza','Venduti','Disponibili'];
   const q = v => { const s = String(v ?? ''); return /[;"\n]/.test(s) ? '"' + s.replace(/"/g,'""') + '"' : s; };
-  const lines = S.products.map(p => { const c = priceCalc(p), cat = catOf(p.cat), sold = soldQty(p.id);
-    return [cat.name, cat.code, LINES[cat.line]||cat.line, p.name, p.sku, p.grade, p.colorway, p.sizes, (byId('suppliers',p.supplier)||{}).name||'', dec(c.uc.purchase), dec(c.uc.freight), dec(c.uc.duties), dec(c.uc.pack), dec(c.uc.cust), dec(c.uc.total), dec(c.price), dec(c.net), dec(c.fees), dec(c.profit), dec(c.margin*100,1), dec(c.suggested), n(p.stock), sold, n(p.stock)-sold].map(q).join(';'); });
+  const lines = S.products.map(p => { const c = priceCalc(p), cat = catOf(p.cat), sold = soldQty(p.id), loaded = loadedQty(p);
+    return [cat.name, cat.code, LINES[cat.line]||cat.line, p.name, p.sku, p.grade, p.colorway, p.sizes, (byId('suppliers',p.supplier)||{}).name||'', dec(c.uc.purchase), dec(c.uc.freight), dec(c.uc.duties), dec(c.uc.pack), dec(c.uc.cust), dec(c.uc.total), dec(c.price), dec(c.net), dec(c.fees), dec(c.profit), dec(c.margin*100,1), dec(c.suggested), loaded, sold, loaded-sold].map(q).join(';'); });
   offerFile('tempra-catalogo-' + today() + '.csv', '﻿' + [head.join(';')].concat(lines).join('\n'));
 }
 
@@ -1171,7 +1248,7 @@ function openProduct(id, catId){
     <fieldset><legend>Vendita e magazzino</legend><div class="fgrid">
       ${fld('Prezzo di vendita','price',d.price,{num:true, suf:'€ IVA incl.'})}
       ${fld('Spedizione tipica','shipId',d.shipId,{options:shipOpts, cls:'span2'})}
-      ${fld('Giacenza caricata','stock',d.stock,{num:true, suf:'pz', hint:'Pezzi entrati in magazzino'})}
+      ${fld('Giacenza iniziale','stock',d.stock,{num:true, suf:'pz', hint:'Iniziale; gli ordini fornitori arrivati si sommano da soli'})}
       ${fld('Soglia di riordino','reorder',d.reorder,{num:true, suf:'pz'})}
     </div></fieldset>
   </div><aside class="ed-sum" id="p-sum"></aside></div></div>
@@ -1182,7 +1259,7 @@ function openProduct(id, catId){
     const wCost = Math.min(c.uc.total, c.price || c.uc.total) / tot * 100;
     const wTax = (c.vat + c.fees) / tot * 100;
     const wProf = Math.max(0, c.profit) / tot * 100;
-    const av = n(d.stock) - soldQty(d.id);
+    const av = avail(d), inc = incomingQty(d.id), arr = arrivedQty(d.id);
     $('#p-sum').innerHTML = `<div class="sum"><p class="eyebrow">Scheda prezzo</p>
       <div class="sum-big">${eur(c.price)}<small>al pubblico</small></div><span class="pill ${s.cls}">${s.label}</span>
       <div class="compbar" role="img" aria-label="Composizione del prezzo: costo ${eur(c.uc.total)}, IVA e commissioni ${eur(c.vat + c.fees)}, utile ${eur(c.profit)}">
@@ -1211,7 +1288,7 @@ function openProduct(id, catId){
         ${c.uc.fr && c.uc.fr.terms !== 'DDP' ? '<span>Resa DDU: dazi, IVA all\'importazione e sdoganamento li paghi all\'arrivo. I dazi sono nella riga Dazi; l\'IVA import la recuperi con la partita IVA.</span>' : ''}
         ${n(d.designCost) > 0 ? (() => { const own = designOwner(d.id); const o = own && byId('orders', own); return `<span>Design ${eur(n(d.designCost))}: ${o ? `conteggiato nell'ordine <b>${h(o.number)}</b> (${h(o.customer || '')})` : 'verrà conteggiato nel primo ordine con questo modello'}. Si ripaga con <b>${c.profit > 0 ? Math.ceil(n(d.designCost) / c.profit) : '—'} pezzi</b>.</span>`; })() : ''}
         <span>Lotto da ${c.uc.lot} pz: investimento <b>${eur(c.uc.total * c.uc.lot)}</b>, utile potenziale <b>${eur(c.profit * c.uc.lot)}</b>.</span>
-        <span>Magazzino: ${n(d.stock)} caricati, ${soldQty(d.id)} venduti, <b>${av} disponibili</b>.</span></div>
+        <span>Magazzino: ${n(d.stock)} iniziali${arr ? ` + ${arr} arrivati dai fornitori` : ''}, ${soldQty(d.id)} venduti, <b>${av} disponibili</b>${inc ? `, ${inc} in arrivo` : ''}.</span></div>
     </div>`;
     $('#mini-sum').innerHTML = `<div><small>Costo pieno</small><b>${eur(c.uc.total)}</b></div><div><small>Utile/pz</small><b class="${c.profit<0?'neg':'pos'}">${eur(c.profit)}</b></div><div><small>Margine</small><b>${pct(c.margin)}</b></div><button type="button" data-jump="p-sum">Scheda prezzo completa ↓</button>`;
     const us = $('#p-sum [data-use-suggested]');
@@ -1337,6 +1414,86 @@ function openShip(id){
     onSave: async () => { if(!d.name.trim()){ toast('Dai un nome alla tariffa'); return; } delete d.sample; closeSheet(); if(await saveDoc('shipping', d)) toast('Tariffa salvata'); },
     onDelete: async () => { closeSheet(); await deleteDoc('shipping', d.id); toast('Tariffa eliminata'); },
     onDup: () => { const c = clone(d); c.id = uid('s'); c.name += ' (copia)'; delete c.sample; closeSheet(); saveDoc('shipping', c).then(ok => ok && openShip(c.id)); }
+  });
+}
+
+/* ----- Ordine al fornitore ----- */
+function nextPurchaseNumber(){
+  const max = S.purchases.reduce((m,a) => Math.max(m, parseInt(String(a.number||'').replace(/\D/g,''),10) || 0), 0);
+  return 'ACQ-' + String(max + 1).padStart(4,'0');
+}
+function openPurchase(id){
+  const src = id ? byId('purchases', id) : null;
+  const d = src ? clone(src) : {id: uid('a'), number: nextPurchaseNumber(), supplier: S.suppliers[0]?.id || '', date: today(), status:'Da ordinare', freightId:'', expected:'', extraCost:0, deposit:0, notes:'', items:[]};
+  d.items = d.items || [];
+  const supOpts = [['','— Scegli —']].concat(S.suppliers.map(f => [f.id, f.name]));
+  const frOpts = [['','Quella di ogni modello']].concat(S.freight.map(f => [f.id, `${f.name} · ${dec(n(f.usdPerKg))} $/kg · ${f.transitDays || ''}`]));
+  const prodOpts = sel => { const mine = S.products.filter(p => p.supplier === d.supplier), others = S.products.filter(p => p.supplier !== d.supplier);
+    const o = p => `<option value="${h(p.id)}" ${p.id===sel?'selected':''}>${h(p.name)}</option>`;
+    return (sel ? '' : '<option value="">— scegli —</option>') + (mine.length ? `<optgroup label="Di questo fornitore">${mine.map(o).join('')}</optgroup>` : '') + (others.length ? `<optgroup label="Altri modelli">${others.map(o).join('')}</optgroup>` : ''); };
+  const linesHtml = () => d.items.map((it, i) => `<div class="ol"><label class="fld ol-prod"><span>Modello</span><div class="inp"><select data-pi="${i}" data-pk="pid" ${readOnly?'disabled':''}>${prodOpts(it.pid)}</select></div></label>
+    <label class="fld"><span>Pezzi</span><div class="inp"><input type="number" min="0" step="1" inputmode="numeric" data-pi="${i}" data-pk="qty" value="${n(it.qty)}" ${readOnly?'disabled':''}></div></label>
+    <label class="fld"><span>Costo/pz</span><div class="inp"><input type="number" step="any" inputmode="decimal" data-pi="${i}" data-pk="cost" value="${n(it.cost)}" ${readOnly?'disabled':''}><select data-pi="${i}" data-pk="currency" style="flex:none;width:auto;border-left:1px solid var(--line)" ${readOnly?'disabled':''}><option value="EUR" ${it.currency!=='USD'?'selected':''}>€</option><option value="USD" ${it.currency==='USD'?'selected':''}>$</option></select></div></label>
+    <div class="ol-tot num" id="pl-tot-${i}"></div><button class="icon-btn" data-prm="${i}" aria-label="Rimuovi riga" ${readOnly?'disabled':''}>✕</button></div>`).join('') || '<p class="muted" style="margin:0">Aggiungi i modelli da ordinare.</p>';
+  const panel = openSheet(`<header class="sh-head"><div><p class="eyebrow mono">${h(d.number)}</p><h2>${src ? 'Ordine fornitore' : 'Nuovo ordine fornitore'}</h2></div><button class="icon-btn" data-close aria-label="Chiudi">✕</button></header>
+  <div class="sh-body"><div class="ed-grid"><div><div class="mini-sum" id="mini-sum"></div>
+    <fieldset><legend>Ordine</legend><div class="fgrid">
+      ${fld('Fornitore','supplier',d.supplier,{options:supOpts, cls:'span2'})}
+      ${fld('Data','date',d.date,{type:'date'})}
+      ${fld('Stato','status',d.status,{options:PSTATUS.map(x=>[x,x]), hint:'"Arrivato" carica i pezzi in magazzino'})}
+      ${fld('Trasporto','freightId',d.freightId,{options:frOpts, cls:'span2'})}
+      ${fld('Arrivo previsto','expected',d.expected,{type:'date'})}
+    </div></fieldset>
+    <fieldset><legend>Articoli</legend><div id="pl-box">${linesHtml()}</div>
+      <div class="actions" style="margin-top:12px"><button class="btn sm" data-padd ${readOnly?'disabled':''}>+ Aggiungi modello</button><button class="btn sm" data-preorder ${readOnly?'disabled':''}>+ Tutti quelli da riordinare</button></div>
+      <p class="help">Il costo parte da quello della scheda modello; cambialo se il fornitore ti fa un prezzo diverso.</p></fieldset>
+    <fieldset><legend>Pagamento</legend><div class="fgrid">
+      ${fld('Altri costi','extraCost',d.extraCost,{num:true, suf:'€', hint:'Campioni, cliché, bonifico estero…'})}
+      ${fld('Acconto già pagato','deposit',d.deposit,{num:true, suf:'€'})}
+      ${fld('Note','notes',d.notes,{area:true, cls:'full', ph:'Accordi, taglie, colori, riferimenti chat'})}
+    </div></fieldset>
+  </div><aside class="ed-sum" id="pa-sum"></aside></div></div>
+  ${footer(!src, src ? 'Salva modifiche' : 'Crea ordine fornitore')}`);
+  const sum = () => {
+    const c = purchaseCalc(d), fx = n(S.settings.usdEur) || 1;
+    d.items.forEach((it, i) => { const el = $('#pl-tot-' + i); if(el) el.innerHTML = `<small>${n(it.qty)} pz</small>${eur(n(it.qty) * n(it.cost) * (it.currency === 'USD' ? fx : 1))}`; });
+    $('#mini-sum').innerHTML = `<div><small>Totale</small><b>${eur(c.total)}</b></div><div><small>Peso</small><b>${dec(c.weight,1)} kg</b></div><div><small>Da pagare</small><b>${eur(c.due)}</b></div><button type="button" data-jump="pa-sum">Riepilogo completo ↓</button>`;
+    $('#pa-sum').innerHTML = `<div class="sum"><p class="eyebrow">Riepilogo</p><div class="sum-big">${eur(c.total)}<small>totale ordine</small></div>
+      <span class="pill ${d.status === 'Da ordinare' ? 'bad' : d.status === 'Arrivato' ? 'ok' : 'warn'}">${h(d.status)}</span>
+      <dl><dt>Merce (${c.pieces} pz)</dt><dd>${eur(c.goods)}</dd>
+        <dt>Trasporto${c.tr ? ' ' + h(c.tr.name.split('·').pop().trim()) : ''} (${dec(c.weight,1)} kg)</dt><dd>${eur(c.freight)}</dd>
+        <dt>Altri costi</dt><dd>${eur(n(d.extraCost))}</dd>
+        <dt class="tot">Totale</dt><dd class="tot">${eur(c.total)}</dd>
+        <dt>Acconto pagato</dt><dd>−${eur(n(d.deposit))}</dd>
+        <dt class="tot">Da pagare</dt><dd class="tot">${eur(c.due)}</dd></dl>
+      <div class="sum-note">${c.tr && c.tr.terms === 'DDP' ? '<span>Resa DDP: dazi inclusi nel trasporto.</span>' : ''}
+        ${c.tr && c.tr.transitDays ? `<span>Tempi: ${h(c.tr.transitDays)} dalla partenza.</span>` : ''}
+        ${c.missingKg ? `<span style="color:#FF8E96">${c.missingKg} pz senza peso: il trasporto è sottostimato.</span>` : ''}
+        <span>Cambio 1 $ = ${dec(fx,4)} €.</span></div></div>`;
+  };
+  const redraw = () => { $('#pl-box').innerHTML = linesHtml(); sum(); };
+  const addLine = p => d.items.push({pid: p ? p.id : '', qty: p ? Math.max(1, n(p.lotQty) || 1) : 1, cost: p ? n(p.cost) : 0, currency: p && p.currency === 'USD' ? 'USD' : 'EUR'});
+  bindFields(panel, d, k => { if(k === 'supplier') redraw(); else sum(); });
+  const lh = e => { const el = e.target; if(!el.dataset || el.dataset.pi === undefined) return; const it = d.items[+el.dataset.pi]; if(!it) return;
+    const k = el.dataset.pk;
+    if(k === 'pid'){ if(e.type !== 'change') return; const p = byId('products', el.value); it.pid = el.value; if(p){ it.cost = n(p.cost); it.currency = p.currency === 'USD' ? 'USD' : 'EUR'; if(!n(it.qty) || it.qty === 1) it.qty = Math.max(1, n(p.lotQty) || 1); } redraw(); return; }
+    if(k === 'currency'){ it.currency = el.value; sum(); return; }
+    it[k] = n(el.value); sum(); };
+  panel.addEventListener('input', lh); panel.addEventListener('change', lh);
+  panel.addEventListener('click', e => {
+    const rm = e.target.closest('[data-prm]'); if(rm){ d.items.splice(+rm.dataset.prm, 1); redraw(); return; }
+    if(e.target.closest('[data-padd]')){ addLine(S.products.find(p => p.supplier === d.supplier)); redraw(); return; }
+    if(e.target.closest('[data-preorder]')){
+      const low = S.products.filter(p => (!d.supplier || p.supplier === d.supplier) && avail(p) + incomingQty(p.id) <= n(p.reorder ?? 5) && !d.items.some(it => it.pid === p.id));
+      low.forEach(addLine); redraw(); toast(low.length ? `${low.length} modelli aggiunti` : 'Niente da riordinare per questo fornitore');
+    }
+  });
+  if(!src) addLine(S.products.find(p => p.supplier === d.supplier));
+  redraw();
+  wireFooter(panel, {
+    onSave: async () => { d.items = d.items.filter(it => it.pid && n(it.qty) > 0); if(!d.items.length){ toast('Aggiungi almeno un modello'); return; } delete d.sample; closeSheet(); if(await saveDoc('purchases', d)) toast(d.status === 'Arrivato' ? 'Salvato: pezzi caricati in magazzino' : 'Ordine fornitore salvato'); },
+    onDelete: async () => { closeSheet(); await deleteDoc('purchases', d.id); toast('Ordine fornitore eliminato'); },
+    onDup: () => { const c = clone(d); c.id = uid('a'); c.number = nextPurchaseNumber(); c.date = today(); c.status = 'Da ordinare'; c.deposit = 0; c.expected = ''; delete c.sample; closeSheet(); saveDoc('purchases', c).then(ok => ok && openPurchase(c.id)); }
   });
 }
 
