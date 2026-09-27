@@ -527,6 +527,7 @@ const n = v => { const x = parseFloat(String(v ?? '').replace(',','.')); return 
 const uid = p => p + '-' + Date.now().toString(36) + Math.random().toString(36).slice(2,7);
 const clone = o => JSON.parse(JSON.stringify(o));
 const byId = (col, id) => (S[col] || []).find(x => x.id === id);
+const fmtKg = (kg, unit) => unit === 'g' ? Math.round(n(kg) * 1000) + ' g' : dec(n(kg)) + ' kg';
 const productFreight = p => p.freightId === 'manual' ? null : (byId('freight', p.freightId) || byId('freight', S.settings.defaultFreight) || S.freight[0] || null);
 const freightPerPiece = (fr, kg, lot) => n(kg) * n(fr.usdPerKg) * (n(S.settings.usdEur) || 1) + n(fr.fixedEur) / Math.max(1, n(lot) || 1);
 const allCats = () => BASE_CATS.concat(S.settings.extraCats || []);
@@ -866,7 +867,7 @@ function vCatalog(){
     const rows = prods.map(p => {
       const pc = priceCalc(p), s = status(pc), av = n(p.stock) - soldQty(p.id);
       return `<button class="row" data-open-product="${h(p.id)}">
-        <span class="r-name"><b>${h(p.name)}</b><small>${h(p.sku||'—')} · ${n(p.weightKg) ? dec(n(p.weightKg)) + ' kg' : '<span style="color:var(--bad)">peso mancante</span>'}</small></span>
+        <span class="r-name"><b>${h(p.name)}</b><small>${h(p.sku||'—')} · ${n(p.weightKg) ? fmtKg(p.weightKg, p.weightUnit) : '<span style="color:var(--bad)">peso mancante</span>'}</small></span>
         <span class="r-grade"><span class="grade ${h(p.grade||'BASE')}">${h(p.grade||'BASE')}</span></span>
         <span class="r-num num"><small>Costo pieno</small>${eur(pc.uc.total)}</span>
         <span class="r-num num"><small>Prezzo</small>${eur(pc.price)}</span>
@@ -1132,7 +1133,7 @@ function openProduct(id, catId){
   const src = id ? byId('products', id) : null;
   const d = src ? clone(src) : {id: uid('p'), cat: catId || allCats()[0].id, name:'', sku:'', grade:'PRO', colorway:'Lama · Forgia', sizes:'', supplier: S.suppliers[0]?.id || '', cost:0, lotQty:50, lotShip:0, duties:0, packaging:0, baseCustoms:[], price:0, shipId: S.shipping[0]?.id || '', stock:0, reorder:5, specs:'', currency:'EUR', freightId:'', weightKg:0};
   d.baseCustoms = d.baseCustoms || [];
-  d.currency = d.currency || 'EUR'; d.freightId = d.freightId || ''; d.weightKg = n(d.weightKg);
+  d.currency = d.currency || 'EUR'; d.freightId = d.freightId || ''; d.weightKg = n(d.weightKg); d.weightUnit = d.weightUnit === 'g' ? 'g' : 'kg';
   const catOpts = allCats().map(c => [c.id, `${c.code} ${c.name}`]);
   const supOpts = [['','— Nessuno —']].concat(S.suppliers.map(f => [f.id, f.name]));
   const shipOpts = [['','— Nessuna —']].concat(S.shipping.map(r => [r.id, `${r.name} (${eur(n(r.cost))})`]));
@@ -1158,10 +1159,11 @@ function openProduct(id, catId){
       ${fld('Prezzo di acquisto','cost',d.cost,{num:true, suf:'/pz', hint:'Dal fornitore, IVA esclusa'})}
       ${fld('Valuta','currency',d.currency,{options:[['EUR','€ Euro'],['USD','$ Dollari USA']], hint:`1 $ = ${dec(n(S.settings.usdEur),4)} € (Impostazioni)`})}
       ${fld('Pezzi per lotto','lotQty',d.lotQty,{num:true, suf:'pz', hint:'Quantità ordinata (o minimo)'})}
-      ${fld('Peso per pezzo','weightKg',d.weightKg,{num:true, suf:'kg', hint:'Lordo con imballo: calcola trasporto import e spedizione ordini'})}
+      <label class="fld"><span>Peso per pezzo</span><div class="inp"><input id="f-weight" type="number" step="any" min="0" inputmode="decimal" value="${d.weightKg ? (d.weightUnit === 'g' ? Math.round(d.weightKg * 1000) : d.weightKg) : ''}" placeholder="0" ${readOnly?'disabled':''}><select id="f-weightUnit" aria-label="Unità di peso" style="flex:none;width:auto;border-left:1px solid var(--line)" ${readOnly?'disabled':''}><option value="kg" ${d.weightUnit !== 'g' ? 'selected' : ''}>kg</option><option value="g" ${d.weightUnit === 'g' ? 'selected' : ''}>g</option></select></div><span class="hint">Lordo con imballo: calcola trasporto import e spedizione ordini</span></label>
       ${fld('Trasporto dalla fabbrica','freightId',d.freightId,{options:[['',`Automatico dal peso · tratta predefinita (${h((byId('freight', S.settings.defaultFreight) || {name:'—'}).name)})`]].concat(S.freight.map(f => [f.id, `${f.name} · ${dec(n(f.usdPerKg))} $/kg ${f.terms||''}`])).concat([['manual','Costo del lotto, lo inserisco io']]), cls:'span2'})}
       <div id="fr-manual" ${d.freightId === 'manual' ? '' : 'hidden'}>${fld('Trasporto del lotto','lotShip',d.lotShip,{num:true, suf:'€', hint:'Corriere/import diviso sui pezzi'})}</div>
-      ${fld('Dazi doganali','duties',d.duties,{num:true, suf:'%', hint:'Sul valore merce; 0 se fornitore UE'})}
+      <div id="duties-box">${fld('Dazi doganali','duties',d.duties,{num:true, suf:'%', hint:'Sul valore merce; 0 se fornitore UE'})}</div>
+      <div id="duties-ddp" class="fld"><span>Dazi doganali</span><p class="help" style="margin:4px 0 0">Inclusi nella tariffa DDP del trasporto: non si pagano a parte.</p></div>
       ${fld('Packaging ed etichette','packaging',d.packaging,{num:true, suf:'€/pz', hint:'Scatola, hangtag, busta'})}
       ${fld('Design del modello','designCost',d.designCost,{num:true, suf:'€ una tantum', hint:'Pagato una volta: va nel primo ordine con questo modello'})}
     </div></fieldset>
@@ -1189,8 +1191,8 @@ function openProduct(id, catId){
       <dl>
         <dt class="sub-h">Costo per pezzo</dt>
         <dt>Acquisto${d.currency === 'USD' ? ` (${dec(n(d.cost))} $)` : ''}</dt><dd>${eur(c.uc.purchase)}</dd>
-        <dt>${c.uc.fr ? `Trasporto ${h(c.uc.fr.name.split('·').pop().trim())} (${dec(n(d.weightKg))} kg × ${dec(n(c.uc.fr.usdPerKg))} $)` : `Trasporto (lotto ÷ ${c.uc.lot})`}</dt><dd>${eur(c.uc.freight)}</dd>
-        <dt>Dazi${c.uc.fr && c.uc.fr.terms === 'DDP' ? ' (inclusi nel trasporto)' : ''}</dt><dd>${eur(c.uc.duties)}</dd>
+        <dt>${c.uc.fr ? `Trasporto ${h(c.uc.fr.name.split('·').pop().trim())} (${fmtKg(d.weightKg, d.weightUnit)} × ${dec(n(c.uc.fr.usdPerKg))} $/kg)` : `Trasporto (lotto ÷ ${c.uc.lot})`}</dt><dd>${eur(c.uc.freight)}</dd>
+        ${c.uc.fr && c.uc.fr.terms === 'DDP' ? '<dt>Dazi</dt><dd>inclusi (DDP)</dd>' : `<dt>Dazi</dt><dd>${eur(c.uc.duties)}</dd>`}
         <dt>Packaging</dt><dd>${eur(c.uc.pack)}</dd>
         <dt>Personalizzazioni di serie</dt><dd>${eur(c.uc.cust)}</dd>
         <dt class="tot">Costo pieno</dt><dd class="tot">${eur(c.uc.total)}</dd>
@@ -1204,7 +1206,7 @@ function openProduct(id, catId){
       </dl>
       <div class="sum-note"><span>Prezzo consigliato per margine ${n(S.settings.targetMargin)}%: <b>${eur(c.suggested)}</b></span>${readOnly || !Number.isFinite(c.suggested) ? '' : '<button class="btn sm" data-use-suggested>Usa questo prezzo</button>'}</div>
       <div class="sum-note">${c.ship ? `<span>Spedizione ${h(c.ship.name)}: se la offri gratis l'utile scende a <b>${eur(c.profitFreeShip)}</b>; se la fai pagare ${eur(n(c.ship.price))} diventa <b>${eur(c.profitPaidShip)}</b>.</span>` : '<span>Scegli una spedizione tipica per vedere l\'effetto sul margine.</span>'}
-        ${S.freight.length && n(d.weightKg) > 0 ? `<span>Trasporto per pezzo con ${dec(n(d.weightKg))} kg: ${S.freight.map(f => `${h(f.name.split('·').pop().trim())} <b>${eur(freightPerPiece(f, d.weightKg, c.uc.lot))}</b>`).join(' · ')}.</span>` : ''}
+        ${S.freight.length && n(d.weightKg) > 0 ? `<span>Trasporto per pezzo con ${fmtKg(d.weightKg, d.weightUnit)}: ${S.freight.map(f => `${h(f.name.split('·').pop().trim())} <b>${eur(freightPerPiece(f, d.weightKg, c.uc.lot))}</b>`).join(' · ')}.</span>` : ''}
         ${c.uc.fr && !n(d.weightKg) ? '<span>Inserisci il peso per pezzo per calcolare il trasporto al kg.</span>' : ''}
         ${c.uc.fr && c.uc.fr.terms !== 'DDP' ? '<span>Resa DDU: dazi, IVA all\'importazione e sdoganamento li paghi all\'arrivo. I dazi sono nella riga Dazi; l\'IVA import la recuperi con la partita IVA.</span>' : ''}
         ${n(d.designCost) > 0 ? (() => { const own = designOwner(d.id); const o = own && byId('orders', own); return `<span>Design ${eur(n(d.designCost))}: ${o ? `conteggiato nell'ordine <b>${h(o.number)}</b> (${h(o.customer || '')})` : 'verrà conteggiato nel primo ordine con questo modello'}. Si ripaga con <b>${c.profit > 0 ? Math.ceil(n(d.designCost) / c.profit) : '—'} pezzi</b>.</span>`; })() : ''}
@@ -1217,9 +1219,14 @@ function openProduct(id, catId){
   };
   bindFields(panel, d, (k) => {
     if(k === 'cat'){ const cc = catOf(d.cat); $('#p-eyebrow').textContent = `${cc.code} · ${cc.name}`; $('#bc-box').innerHTML = customsBox(); }
-    if(k === 'freightId'){ $('#fr-manual').hidden = d.freightId !== 'manual'; }
+    if(k === 'freightId'){ $('#fr-manual').hidden = d.freightId !== 'manual'; dutiesVis(); }
     sum();
   });
+  const dutiesVis = () => { const fr = productFreight(d); const ddp = !!(fr && fr.terms === 'DDP'); $('#duties-box').hidden = ddp; $('#duties-ddp').hidden = !ddp; };
+  dutiesVis();
+  const wIn = $('#f-weight'), wU = $('#f-weightUnit');
+  wIn.addEventListener('input', () => { const v = n(wIn.value); d.weightKg = d.weightUnit === 'g' ? v / 1000 : v; sum(); });
+  wU.addEventListener('change', () => { d.weightUnit = wU.value; if(d.weightKg) wIn.value = d.weightUnit === 'g' ? Math.round(d.weightKg * 1000) : +d.weightKg.toFixed(3); sum(); });
   panel.addEventListener('change', e => {
     const bc = e.target.dataset && e.target.dataset.bc; if(!bc) return;
     d.baseCustoms = e.target.checked ? [...new Set(d.baseCustoms.concat(bc))] : d.baseCustoms.filter(x => x !== bc);
