@@ -132,6 +132,11 @@ main{padding-block:26px 80px}
 .st.Preventivo{background:var(--steel-soft);color:var(--steel)}
 .st.Confermato,.st.In-produzione{background:var(--warn-bg);color:var(--warn)}
 .st.Spedito,.st.Consegnato{background:var(--good-bg);color:var(--good)}
+.tag{display:inline-block;font-family:var(--f-mono);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;padding:2px 6px;border-radius:2px;vertical-align:2px;margin-left:6px;font-weight:700;white-space:nowrap}
+.tag.ex{border:1px dashed var(--line-strong);color:var(--muted);background:transparent}
+.tag.mine{background:var(--good-bg);color:var(--good)}
+.is-sample{opacity:.72}.is-sample:hover{opacity:1}
+.banner .seg{flex:none}
 .st.p-Da-ordinare{background:var(--bad-bg);color:var(--bad)}
 .st.p-Ordinato,.st.p-In-produzione,.st.p-In-viaggio{background:var(--warn-bg);color:var(--warn)}
 .st.p-Arrivato{background:var(--good-bg);color:var(--good)}
@@ -525,7 +530,8 @@ let readOnly = false;
 let loaded = false;
 let settingsExists = false;
 let view = 'dashboard';
-const ui = {line:'all', q:'', orderStatus:'all', pStatus:'open'};
+const ui = {line:'all', q:'', orderStatus:'all', pStatus:'open', onlyMine:false};
+try { ui.onlyMine = localStorage.getItem('tempra-only-mine') === '1'; } catch(e) {}
 
 /* ---------- Utility ---------- */
 const $ = (s, r=document) => r.querySelector(s);
@@ -598,6 +604,7 @@ function arrivedQty(pid, st){
 const incomingQty = pid => arrivedQty(pid, INCOMING);
 const loadedQty = p => n(p.stock) + arrivedQty(p.id);
 const avail = p => loadedQty(p) - soldQty(p.id);
+const availHtml = (av, low) => av < 0 ? `<span class="low">0 pz</span><small style="display:block;color:var(--bad);font-size:11px">mancano ${-av}</small>` : `<span class="${low ? 'low' : ''}">${av} pz</span>`;
 const lineSupplier = it => (byId('products', it.pid) || {}).supplier || '';
 function purchaseSuppliers(a){ return [...new Set((a.items || []).map(lineSupplier).filter(Boolean))]; }
 function purchaseCalc(a){
@@ -625,7 +632,12 @@ function purchaseCalc(a){
 }
 function soldQty(pid){
   let q = 0;
-  S.orders.forEach(o => { if(SOLD.includes(o.status)) (o.items||[]).forEach(it => { if(it.pid === pid) q += n(it.qty); }); });
+  const p = byId('products', pid);
+  S.orders.forEach(o => {
+    if(!SOLD.includes(o.status)) return;
+    if(o.sample && p && !p.sample) return; // gli ordini d'esempio non toccano il magazzino dei tuoi prodotti
+    (o.items||[]).forEach(it => { if(it.pid === pid) q += n(it.qty); });
+  });
   return q;
 }
 function orderCalc(o){
@@ -882,11 +894,16 @@ function render(){
   if(fid){ const el = document.getElementById(fid); if(el){ el.focus(); try { if(sel && sel[0] != null) el.setSelectionRange(sel[0], sel[1]); } catch(e) {} } }
 }
 
+const tag = x => x && x.sample ? '<span class="tag ex" title="Dato di esempio: non l\'hai inserito tu">Esempio</span>' : '<span class="tag mine" title="Inserito o confermato da te">✓ Tuo</span>';
+const vis = list => ui.onlyMine ? list.filter(x => !x.sample) : list;
+const sc = x => x && x.sample ? 'is-sample' : '';
 function sampleBanner(){
-  const has = COLS.some(c => S[c].some(x => x.sample));
-  if(!has) return '';
-  return `<div class="banner sample"><p><strong>Stai vedendo dati di esempio.</strong> Prezzi, fornitori e ordini segnati come esempio servono a mostrarti come funziona il gestionale: modificali con i tuoi numeri oppure eliminali tutti.</p>
-  <button class="btn sm" data-act="clear-sample" ${readOnly?'disabled':''}>Elimina dati di esempio</button></div>`;
+  const ex = COLS.reduce((t,c) => t + S[c].filter(x => x.sample).length, 0);
+  const mineN = COLS.reduce((t,c) => t + S[c].filter(x => !x.sample).length, 0);
+  if(!ex) return '';
+  return `<div class="banner sample"><p><span class="tag mine" style="margin:0">✓ Tuo</span> = inserito o salvato da te (${mineN}) · <span class="tag ex" style="margin:0">Esempio</span> = dato di prova (${ex}). Quando modifichi e salvi un esempio diventa tuo.</p>
+  <div class="seg" role="group" aria-label="Cosa mostrare"><button data-act="show-all" aria-pressed="${!ui.onlyMine}">Tutti</button><button data-act="show-mine" aria-pressed="${!!ui.onlyMine}">Solo i miei</button></div>
+  <button class="btn sm" data-act="clear-sample" ${readOnly?'disabled':''}>Elimina esempi</button></div>`;
 }
 function emptyCloud(){
   if(mode !== 'cloud' || settingsExists || COLS.some(c => S[c].length)) return '';
@@ -903,7 +920,7 @@ function vDashboard(){
   const qVal = quotes.reduce((a,o) => a + orderCalc(o).total, 0);
   let stockVal = 0, stockPcs = 0;
   S.products.forEach(p => { const av = Math.max(0, avail(p)); stockVal += av * unitCost(p).total; stockPcs += av; });
-  const rows = S.products.map(p => ({p, c: priceCalc(p)})).filter(r => r.c.price > 0);
+  const rows = vis(S.products).map(p => ({p, c: priceCalc(p)})).filter(r => r.c.price > 0);
   const avgMargin = rows.length ? rows.reduce((a,r) => a + (Number.isFinite(r.c.margin) ? r.c.margin : 0), 0) / rows.length : NaN;
   rows.sort((a,b) => a.c.margin - b.c.margin);
   const target = n(S.settings.targetMargin)/100;
@@ -911,7 +928,7 @@ function vDashboard(){
   const meters = rows.map(r => {
     const s = status(r.c); const w = Math.max(0, Math.min(1, r.c.margin / maxM)) * 100;
     return `<div class="meter" data-open-product="${h(r.p.id)}" title="${h(r.p.name)}: utile ${eur(r.c.profit)} su ${eur(r.c.price)}">
-      <div class="m-name"><small>${h(catOf(r.p.cat).code)}</small>${h(r.p.name)}</div>
+      <div class="m-name"><small>${h(catOf(r.p.cat).code)}</small>${h(r.p.name)}${r.p.sample ? '<span class="tag ex">Es.</span>' : ''}</div>
       <div class="track"><div class="fill" style="width:${w}%"></div><div class="tick" style="left:${(target/maxM*100).toFixed(2)}%"></div></div>
       <div class="m-val num">${pct(r.c.margin)}</div><span class="pill ${s.cls}">${s.label}</span></div>`;
   }).join('') || '<p class="muted">Nessun modello con prezzo di vendita.</p>';
@@ -933,7 +950,7 @@ function vDashboard(){
       <div class="panel-body"><div class="meter-list">${meters}</div><p class="help">Ordinati dal più basso. Margine = utile ÷ prezzo senza IVA, dopo costi di acquisto, trasporto, dazi, packaging, personalizzazioni di serie e commissioni di pagamento.</p></div></section>
     <div style="display:flex;flex-direction:column;gap:18px">
       <section class="panel"><div class="panel-head"><h2>Da riordinare</h2><span class="muted" style="font-size:13px">disponibili ≤ soglia</span></div><div class="panel-body"><div class="list">
-        ${reorder.map(r => `<div class="li" data-open-product="${h(r.p.id)}"><div class="grow"><b>${h(r.p.name)}</b><small>${h(catOf(r.p.cat).code)} · soglia ${n(r.p.reorder ?? 5)} · lotto ${n(r.p.lotQty)||1} pz${r.inc ? ` · ${r.inc} in arrivo` : ''}</small></div><span class="num ${r.av<=0?'low':''}">${r.av} pz</span></div>`).join('') || '<p class="muted">Tutto in magazzino sopra soglia.</p>'}
+        ${reorder.map(r => `<div class="li" data-open-product="${h(r.p.id)}"><div class="grow"><b>${h(r.p.name)}</b><small>${h(catOf(r.p.cat).code)} · soglia ${n(r.p.reorder ?? 5)} · lotto ${n(r.p.lotQty)||1} pz${r.inc ? ` · ${r.inc} in arrivo` : ''}</small></div><span class="num" style="text-align:right">${availHtml(r.av, r.av <= 0)}</span></div>`).join('') || '<p class="muted">Tutto in magazzino sopra soglia.</p>'}
       </div></div></section>
       <section class="panel"><div class="panel-head"><h2>Ultimi ordini</h2><button class="btn ghost sm" data-go="ordini">Tutti</button></div><div class="panel-body"><div class="list">
         ${recent.map(o => { const c = orderCalc(o); return `<div class="li" data-open-order="${h(o.id)}"><div class="grow"><b>${h(o.customer||'Senza cliente')}</b><small class="mono">${h(o.number)} · ${fmtDate(o.date)} · ${c.pieces} pz</small></div><span class="st ${h((o.status||'').replace(/ /g,'-'))}">${h(o.status)}</span><span class="num">${eur(c.total)}</span></div>`; }).join('') || '<p class="muted">Ancora nessun ordine.</p>'}
@@ -947,18 +964,18 @@ function vCatalog(){
   const q = ui.q.trim().toLowerCase();
   const cats = allCats().filter(c => ui.line === 'all' || c.line === ui.line);
   const blocks = cats.map(c => {
-    const prods = S.products.filter(p => p.cat === c.id && (!q || [p.name,p.sku,p.colorway,p.specs].join(' ').toLowerCase().includes(q)));
-    if(q && !prods.length) return '';
+    const prods = vis(S.products).filter(p => p.cat === c.id && (!q || [p.name,p.sku,p.colorway,p.specs].join(' ').toLowerCase().includes(q)));
+    if((q || ui.onlyMine) && !prods.length) return '';
     const rows = prods.map(p => {
       const pc = priceCalc(p), s = status(pc), av = avail(p);
-      return `<button class="row" data-open-product="${h(p.id)}">
-        <span class="r-name"><b>${h(p.name)}</b><small>${h(p.sku||'—')} · ${n(p.weightKg) ? fmtKg(p.weightKg, p.weightUnit) : '<span style="color:var(--bad)">peso mancante</span>'}</small></span>
+      return `<button class="row ${sc(p)}" data-open-product="${h(p.id)}">
+        <span class="r-name"><b>${h(p.name)}${tag(p)}</b><small>${h(p.sku||'—')} · ${n(p.weightKg) ? fmtKg(p.weightKg, p.weightUnit) : '<span style="color:var(--bad)">peso mancante</span>'}</small></span>
         <span class="r-grade"><span class="grade ${h(p.grade||'BASE')}">${h(p.grade||'BASE')}</span></span>
         <span class="r-num num"><small>Costo pieno</small>${eur(pc.uc.total)}</span>
         <span class="r-num num"><small>Prezzo</small>${eur(pc.price)}</span>
         <span class="r-num num"><small>Utile</small>${eur(pc.profit)}</span>
         <span class="r-num"><small>Margine</small><span class="pill ${s.cls}">${pct(pc.margin)}</span></span>
-        <span class="r-num num ${av <= n(p.reorder ?? 5) ? 'low':''}"><small>Disponibili</small>${av} pz</span>
+        <span class="r-num num"><small>Disponibili</small>${availHtml(av, av <= n(p.reorder ?? 5))}</span>
       </button>`;
     }).join('');
     return `<section class="cat-block"><div class="cat-head"><span class="cat-code">${h(c.code)}</span><span class="cat-name">${h(c.name)}</span><span class="line-tag ${h(c.line)}">${h(LINES[c.line]||c.line)}</span><span class="count">${prods.length} ${prods.length===1?'modello':'modelli'}</span>
@@ -975,9 +992,9 @@ function vCatalog(){
 
 function vCustoms(){
   const v = n(S.settings.iva)/100;
-  const rows = S.customs.slice().sort((a,b) => (a.method||'').localeCompare(b.method||'') || a.name.localeCompare(b.name)).map(c => {
+  const rows = vis(S.customs).slice().sort((a,b) => (a.method||'').localeCompare(b.method||'') || a.name.localeCompare(b.name)).map(c => {
     const netP = n(c.price)/(1+v), m = netP - n(c.cost);
-    return `<tr data-open-custom="${h(c.id)}"><td class="t-main"><b>${h(c.name)}</b></td><td data-label="Tecnica">${h(c.method)}</td>
+    return `<tr class="${sc(c)}" data-open-custom="${h(c.id)}"><td class="t-main"><b>${h(c.name)}</b>${tag(c)}</td><td data-label="Tecnica">${h(c.method)}</td>
       <td class="r num" data-label="Costo/pz">${eur(n(c.cost))}</td><td class="r num" data-label="Impianto">${n(c.setup) ? eur(n(c.setup)) : '—'}</td>
       <td class="r num" data-label="Prezzo cliente">${n(c.price) ? eur(n(c.price)) : '<span class="muted">di serie</span>'}</td>
       <td class="r num" data-label="Guadagno/pz">${n(c.price) ? eur(m) : '<span class="muted">—</span>'}</td>
@@ -990,9 +1007,9 @@ function vCustoms(){
 }
 
 function vOrders(){
-  const list = S.orders.filter(o => ui.orderStatus === 'all' || o.status === ui.orderStatus).sort((a,b) => (b.date||'').localeCompare(a.date||'') || (b.number||'').localeCompare(a.number||''));
+  const list = vis(S.orders).filter(o => ui.orderStatus === 'all' || o.status === ui.orderStatus).sort((a,b) => (b.date||'').localeCompare(a.date||'') || (b.number||'').localeCompare(a.number||''));
   const rows = list.map(o => { const c = orderCalc(o);
-    return `<tr data-open-order="${h(o.id)}"><td class="mono" data-label="Numero">${h(o.number)}</td><td class="num" data-label="Data">${fmtDate(o.date)}</td><td class="t-main"><b>${h(o.customer||'—')}</b><div class="muted" style="font-size:12.5px">${h(o.channel||'')}</div></td>
+    return `<tr class="${sc(o)}" data-open-order="${h(o.id)}"><td class="mono" data-label="Numero">${h(o.number)}</td><td class="num" data-label="Data">${fmtDate(o.date)}</td><td class="t-main"><b>${h(o.customer||'—')}</b>${tag(o)}<div class="muted" style="font-size:12.5px">${h(o.channel||'')}</div></td>
       <td class="r num" data-label="Pezzi">${c.pieces}</td><td class="r num" data-label="Totale">${eur(c.total)}</td><td class="r num" data-label="Utile">${eur(c.profit)}</td><td class="r" data-label="Margine"><span class="pill ${c.profit<0?'bad':(c.margin < n(S.settings.targetMargin)/100 ? 'warn':'ok')}">${pct(c.margin)}</span></td>
       <td data-label="Stato"><span class="st ${h((o.status||'').replace(/ /g,'-'))}">${h(o.status)}</span></td></tr>`; }).join('');
   return `${sampleBanner()}<div class="view-head"><div><p class="eyebrow">Squadre, circoli, sito</p><h1>Ordini e preventivi</h1><p class="lead">Componi un preventivo con modelli, quantità e personalizzazioni: vedi subito totale per il cliente, costi e utile. Cambia lo stato in "Confermato" quando diventa un ordine.</p></div>
@@ -1006,11 +1023,11 @@ function vPurchases(){
   const sumBy = list => list.reduce((t,a) => t + purchaseCalc(a).total, 0);
   const todo = S.purchases.filter(a => a.status === 'Da ordinare'), incoming = S.purchases.filter(a => INCOMING.includes(a.status));
   const due = open.filter(a => a.status !== 'Da ordinare').reduce((t,a) => t + purchaseCalc(a).due, 0);
-  const list = S.purchases.filter(a => ui.pStatus === 'all' || (ui.pStatus === 'open' ? !['Arrivato','Annullato'].includes(a.status) : a.status === ui.pStatus))
+  const list = vis(S.purchases).filter(a => ui.pStatus === 'all' || (ui.pStatus === 'open' ? !['Arrivato','Annullato'].includes(a.status) : a.status === ui.pStatus))
     .sort((a,b) => PSTATUS.indexOf(a.status) - PSTATUS.indexOf(b.status) || (b.date||'').localeCompare(a.date||''));
   const rows = list.map(a => { const c = purchaseCalc(a), f = byId('suppliers', a.supplier);
-    return `<tr data-open-purchase="${h(a.id)}"><td class="mono" data-label="Numero" style="white-space:nowrap">${h(a.number)}</td><td class="num" data-label="Data">${fmtDate(a.date)}</td>
-      <td class="t-main"><b>${h(a.supplier ? (f ? f.name : 'Fornitore non indicato') : 'Più fornitori: ' + purchaseSuppliers(a).map(id => (byId('suppliers', id) || {name:'?'}).name).join(', '))}</b><div class="muted" style="font-size:12.5px">${(a.items||[]).map(it => h((byId('products', it.pid)||{name:'?'}).name) + ' ×' + n(it.qty)).join(' · ')}</div></td>
+    return `<tr class="${sc(a)}" data-open-purchase="${h(a.id)}"><td class="mono" data-label="Numero" style="white-space:nowrap">${h(a.number)}</td><td class="num" data-label="Data">${fmtDate(a.date)}</td>
+      <td class="t-main"><b>${h(a.supplier ? (f ? f.name : 'Fornitore non indicato') : 'Più fornitori: ' + purchaseSuppliers(a).map(id => (byId('suppliers', id) || {name:'?'}).name).join(', '))}</b>${tag(a)}<div class="muted" style="font-size:12.5px">${(a.items||[]).map(it => h((byId('products', it.pid)||{name:'?'}).name) + ' ×' + n(it.qty)).join(' · ')}</div></td>
       <td class="r num" data-label="Pezzi">${c.pieces}</td><td class="r num" data-label="Peso">${dec(c.weight,1)} kg</td><td class="r num" data-label="Totale">${eur(c.total)}</td><td class="r num" data-label="Da pagare">${eur(c.due)}</td>
       <td data-label="Arrivo" class="num">${a.status === 'Arrivato' ? 'arrivato' : (a.expected ? fmtDate(a.expected) : h((c.tr && c.tr.transitDays) || '—'))}</td>
       <td data-label="Stato"><span class="st p-${h(a.status.replace(/ /g,'-'))}">${h(a.status)}</span>${a.isSample ? ' <span class="st">Campione</span>' : ''}</td></tr>`; }).join('');
@@ -1026,9 +1043,9 @@ function vPurchases(){
 }
 
 function vSuppliers(){
-  const cards = S.suppliers.map(f => {
+  const cards = vis(S.suppliers).map(f => {
     const prods = S.products.filter(p => p.supplier === f.id);
-    return `<button class="card" data-open-supplier="${h(f.id)}"><div><p class="eyebrow">${h(f.country||'—')}</p><h3>${h(f.name)}</h3></div>
+    return `<button class="card ${sc(f)}" data-open-supplier="${h(f.id)}"><div><p class="eyebrow">${h(f.country||'—')}</p><h3>${h(f.name)}${tag(f)}</h3></div>
       <dl class="kv"><dt>Consegna</dt><dd>${n(f.leadDays) ? n(f.leadDays)+' giorni' : '—'}</dd><dt>Minimo</dt><dd>${n(f.moq) ? n(f.moq)+' pz' : '—'}</dd><dt>Pagamento</dt><dd>${h(f.terms||'—')}</dd>${f.contact||f.email||f.phone?`<dt>Contatto</dt><dd>${h([f.contact,f.email,f.phone].filter(Boolean).join(' · '))}</dd>`:''}</dl>
       <div class="chips">${prods.map(p => `<span class="chip">${h(catOf(p.cat).code)} ${h(p.name)}</span>`).join('') || '<span class="muted" style="font-size:13px">Nessun modello collegato</span>'}</div></button>`;
   }).join('');
@@ -1039,15 +1056,15 @@ function vSuppliers(){
 
 function vShipping(){
   const v = n(S.settings.iva)/100, fx = n(S.settings.usdEur) || 1;
-  const frRows = S.freight.map(f => {
+  const frRows = vis(S.freight).map(f => {
     const used = S.products.filter(p => { const pf = productFreight(p); return pf && pf.id === f.id; }).length;
-    return `<tr data-open-freight="${h(f.id)}"><td class="t-main"><b>${h(f.name)}</b><div class="muted" style="font-size:12.5px">${h((byId('suppliers', f.supplier) || {}).name || '')}</div></td>
+    return `<tr class="${sc(f)}" data-open-freight="${h(f.id)}"><td class="t-main"><b>${h(f.name)}</b>${tag(f)}<div class="muted" style="font-size:12.5px">${h((byId('suppliers', f.supplier) || {}).name || '')}</div></td>
       <td class="r num" data-label="$/kg">${dec(n(f.usdPerKg))} $</td><td class="r num" data-label="€/kg">${eur(n(f.usdPerKg) * fx)}</td>
       <td class="r num" data-label="Fisso">${n(f.fixedEur) ? eur(n(f.fixedEur)) : '—'}</td>
       <td data-label="Resa"><span class="pill ${f.terms === 'DDP' ? 'ok' : 'warn'}">${h(f.terms || 'DDU')}</span></td>
       <td class="r" data-label="Tempi">${h(f.transitDays || '—')}${S.settings.defaultFreight === f.id ? ' <span class="pill neutral">Predefinita</span>' : ''}</td><td class="r num" data-label="Modelli">${used}</td></tr>`; }).join('');
-  const rows = S.shipping.map(r => { const diff = n(r.price)/(1+v) - n(r.cost);
-    return `<tr data-open-ship="${h(r.id)}"><td class="t-main"><b>${h(r.name)}</b><div class="muted" style="font-size:12.5px">${h(r.carrier||'')}</div></td><td data-label="Zona">${h(r.zone||'—')}</td><td class="r num" data-label="Peso max">${n(r.maxKg) ? dec(n(r.maxKg),1)+' kg' : '—'}</td>
+  const rows = vis(S.shipping).map(r => { const diff = n(r.price)/(1+v) - n(r.cost);
+    return `<tr class="${sc(r)}" data-open-ship="${h(r.id)}"><td class="t-main"><b>${h(r.name)}</b>${tag(r)}<div class="muted" style="font-size:12.5px">${h(r.carrier||'')}</div></td><td data-label="Zona">${h(r.zone||'—')}</td><td class="r num" data-label="Peso max">${n(r.maxKg) ? dec(n(r.maxKg),1)+' kg' : '—'}</td>
       <td class="r num" data-label="Costo tuo">${eur(n(r.cost))}</td><td class="r num" data-label="Prezzo cliente">${eur(n(r.price))}</td><td class="r num" data-label="Differenza" style="color:${diff<0?'var(--bad)':'inherit'}">${eur(diff)}</td>
       <td class="r num" data-label="Modelli">${S.products.filter(p=>p.shipId===r.id).length}</td></tr>`; }).join('');
   return `${sampleBanner()}<div class="view-head"><div><p class="eyebrow">Import e consegne</p><h1>Spedizioni</h1><p class="lead">Due tratte: dalla fabbrica a te (tariffe al kg, entrano nel costo pieno di ogni modello) e da te al cliente (corrieri, entrano negli ordini).</p></div></div>
@@ -1123,6 +1140,7 @@ document.addEventListener('click', async e => {
     case 'new-supplier': return openSupplier(null);
     case 'new-ship': return openShip(null);
     case 'new-freight': return openFreight(null);
+    case 'show-all': case 'show-mine': ui.onlyMine = d.act === 'show-mine'; try { localStorage.setItem('tempra-only-mine', ui.onlyMine ? '1' : '0'); } catch(e) {} return render();
     case 'fx-now': t.disabled = true; await refreshFx(true); t.disabled = false; return;
     case 'new-purchase': return openPurchase(null);
     case 'export-csv': return exportCSV();
@@ -1197,7 +1215,10 @@ function exportCSV(){
 }
 
 /* ---------- Pannello di modifica ---------- */
+let sheetSrc = null;
 function openSheet(html){
+  const item = sheetSrc; sheetSrc = null;
+  if(item && item.sample) html = html.replace('</header>', '</header><div class="banner sample" style="margin:0;border-radius:0;border-left-width:4px"><p><span class="tag ex" style="margin:0">Esempio</span> Questo è un dato di prova: quando salvi diventa <b>tuo</b>.</p></div>');
   const el = $('#sheet');
   el.innerHTML = `<div class="sheet-back" data-close></div><section class="sheet-panel" role="dialog" aria-modal="true">${html}</section>`;
   el.hidden = false; document.body.classList.add('noscroll');
@@ -1245,7 +1266,7 @@ function wireFooter(panel, {onSave, onDelete, onDup}){
 
 /* ----- Prodotto ----- */
 function openProduct(id, catId){
-  const src = id ? byId('products', id) : null;
+  const src = id ? byId('products', id) : null; sheetSrc = src;
   const d = src ? clone(src) : {id: uid('p'), cat: catId || allCats()[0].id, name:'', sku:'', grade:'PRO', colorway:'Lama · Forgia', sizes:'', supplier: S.suppliers[0]?.id || '', cost:0, lotQty:50, lotShip:0, duties:0, packaging:0, baseCustoms:[], price:0, shipId: S.shipping[0]?.id || '', stock:0, reorder:5, specs:'', currency:'EUR', freightId:'', weightKg:0};
   d.baseCustoms = d.baseCustoms || [];
   d.currency = d.currency || 'EUR'; d.freightId = d.freightId || ''; d.weightKg = n(d.weightKg); d.weightUnit = d.weightUnit === 'g' ? 'g' : 'kg';
@@ -1326,7 +1347,7 @@ function openProduct(id, catId){
         ${c.uc.fr && c.uc.fr.terms !== 'DDP' ? '<span>Resa DDU: dazi, IVA all\'importazione e sdoganamento li paghi all\'arrivo. I dazi sono nella riga Dazi; l\'IVA import la recuperi con la partita IVA.</span>' : ''}
         ${n(d.designCost) > 0 ? (() => { const own = designOwner(d.id); const o = own && byId('purchases', own); return `<span>Design ${eur(n(d.designCost))}: ${o ? `conteggiato nell'ordine campione <b>${h(o.number)}</b>` : 'verrà conteggiato nel primo ordine campione al fornitore con questo modello'}. Si ripaga con <b>${c.profit > 0 ? Math.ceil(n(d.designCost) / c.profit) : '—'} pezzi</b>.</span>`; })() : ''}
         <span>Lotto da ${c.uc.lot} pz: investimento <b>${eur(c.uc.total * c.uc.lot)}</b>, utile potenziale <b>${eur(c.profit * c.uc.lot)}</b>.</span>
-        <span>Magazzino: ${n(d.stock)} iniziali${arr ? ` + ${arr} arrivati dai fornitori` : ''}, ${soldQty(d.id)} venduti, <b>${av} disponibili</b>${inc ? `, ${inc} in arrivo` : ''}.</span></div>
+        <span>Magazzino: ${n(d.stock)} iniziali${arr ? ` + ${arr} arrivati dai fornitori` : ''}, ${soldQty(d.id)} venduti, <b>${Math.max(0, av)} disponibili</b>${av < 0 ? ` · <b style="color:#FF8E96">mancano ${-av} pezzi</b> per gli ordini già confermati: ordinali al fornitore` : ''}${inc ? `, ${inc} in arrivo` : ''}.</span></div>
     </div>`;
     $('#mini-sum').innerHTML = `<div><small>Costo pieno</small><b>${eur(c.uc.total)}</b></div><div><small>Utile/pz</small><b class="${c.profit<0?'neg':'pos'}">${eur(c.profit)}</b></div><div><small>Margine</small><b>${pct(c.margin)}</b></div><button type="button" data-jump="p-sum">Scheda prezzo completa ↓</button>`;
     const us = $('#p-sum [data-use-suggested]');
@@ -1361,7 +1382,7 @@ function openProduct(id, catId){
 
 /* ----- Personalizzazione ----- */
 function openCustom(id){
-  const src = id ? byId('customs', id) : null;
+  const src = id ? byId('customs', id) : null; sheetSrc = src;
   const d = src ? clone(src) : {id: uid('c'), name:'', method: METHODS[0], cost:0, setup:0, price:0, cats:[], notes:''};
   d.cats = d.cats || [];
   const catChecks = ['calcio','padel'].map(l => `<p class="eyebrow" style="margin:10px 0 6px">${LINES[l]}</p><div class="checks">${allCats().filter(c=>c.line===l).map(c => `<label class="check"><input type="checkbox" data-cc="${h(c.id)}" ${d.cats.includes(c.id)?'checked':''} ${readOnly?'disabled':''}><span>${h(c.code)} ${h(c.name)}</span></label>`).join('')}</div>`).join('');
@@ -1398,7 +1419,7 @@ function openCustom(id){
 
 /* ----- Fornitore ----- */
 function openSupplier(id){
-  const src = id ? byId('suppliers', id) : null;
+  const src = id ? byId('suppliers', id) : null; sheetSrc = src;
   const d = src ? clone(src) : {id: uid('f'), name:'', country:'', contact:'', email:'', phone:'', website:'', leadDays:0, moq:0, terms:'', notes:''};
   const prods = S.products.filter(p => p.supplier === d.id);
   const panel = openSheet(`<header class="sh-head"><div><p class="eyebrow">Fornitore</p><h2>${src ? h(src.name) : 'Nuovo fornitore'}</h2></div><button class="icon-btn" data-close aria-label="Chiudi">✕</button></header>
@@ -1431,7 +1452,7 @@ function openSupplier(id){
 
 /* ----- Spedizione ----- */
 function openShip(id){
-  const src = id ? byId('shipping', id) : null;
+  const src = id ? byId('shipping', id) : null; sheetSrc = src;
   const d = src ? clone(src) : {id: uid('s'), name:'', carrier:'', zone:'Italia', maxKg:0, cost:0, price:0, notes:''};
   const panel = openSheet(`<header class="sh-head"><div><p class="eyebrow">Tariffa di spedizione</p><h2>${src ? h(src.name) : 'Nuova tariffa'}</h2></div><button class="icon-btn" data-close aria-label="Chiudi">✕</button></header>
   <div class="sh-body"><div class="ed-grid"><div><fieldset><legend>Tariffa</legend><div class="fgrid">
@@ -1461,7 +1482,7 @@ function nextPurchaseNumber(){
   return 'ACQ-' + String(max + 1).padStart(4,'0');
 }
 function openPurchase(id){
-  const src = id ? byId('purchases', id) : null;
+  const src = id ? byId('purchases', id) : null; sheetSrc = src;
   const d = src ? clone(src) : {id: uid('a'), number: nextPurchaseNumber(), supplier: S.suppliers[0]?.id || '', date: today(), status:'Da ordinare', freightId:'', expected:'', extraCost:0, deposit:0, notes:'', items:[]};
   d.items = d.items || [];
   const supOpts = [['','Più fornitori · spedizione unica']].concat(S.suppliers.map(f => [f.id, f.name]));
@@ -1550,7 +1571,7 @@ function openPurchase(id){
 
 /* ----- Tariffa import ----- */
 function openFreight(id){
-  const src = id ? byId('freight', id) : null;
+  const src = id ? byId('freight', id) : null; sheetSrc = src;
   const d = src ? clone(src) : {id: uid('fr'), name:'', supplier:'', usdPerKg:0, fixedEur:0, terms:'DDU', transitDays:'', notes:''};
   const supOpts = [['','— Qualsiasi —']].concat(S.suppliers.map(f => [f.id, f.name]));
   const panel = openSheet(`<header class="sh-head"><div><p class="eyebrow">Trasporto dalla fabbrica</p><h2>${src ? h(src.name) : 'Nuova tariffa import'}</h2></div><button class="icon-btn" data-close aria-label="Chiudi">✕</button></header>
@@ -1590,7 +1611,7 @@ function nextNumber(){
   return 'TMP-' + String(max + 1).padStart(4,'0');
 }
 function openOrder(id){
-  const src = id ? byId('orders', id) : null;
+  const src = id ? byId('orders', id) : null; sheetSrc = src;
   const d = src ? clone(src) : {id: uid('o'), number: nextNumber(), date: today(), customer:'', channel:'Squadra', status:'Preventivo', shipAuto:true, zone:'Italia', freightId:'', shipId:'', parcels:1, shipCharged:0, discountPct:0, notes:'', items:[]};
   d.items = d.items || [];
   d.freightId = d.freightId || ''; d.zone = d.zone || (byId('shipping', d.shipId) || {}).zone || 'Italia';
