@@ -299,6 +299,82 @@ legend{font-family:var(--f-mono);font-size:11px;letter-spacing:.16em;text-transf
 .loading{display:grid;place-items:center;min-height:50vh;color:var(--muted);font-family:var(--f-mono);font-size:13px;letter-spacing:.1em}
 .help{font-size:13px;color:var(--muted);margin:8px 0 0}
 .copybox{width:100%;min-height:140px;font-family:var(--f-mono);font-size:12px;border:1px solid var(--line-strong);background:var(--bg);border-radius:3px;padding:10px}
+/* Sezioni spedizioni */
+.ship-sec{margin-bottom:28px}
+.sec-head{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:10px 16px;margin-bottom:10px}
+.sec-head h2{font-size:21px}
+.sec-head .help{margin-top:4px}
+
+/* Riepilogo compatto (solo schermi stretti) */
+.mini-sum{display:none}
+@media (max-width:900px){
+  .ed-sum{order:0}
+  .sh-body:has(.mini-sum){padding-top:0}
+  .mini-sum{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px 10px;align-items:end;position:sticky;top:0;z-index:3;margin:12px 0;background:var(--head-bg);color:var(--head-ink);border-radius:4px;padding:10px 12px;box-shadow:0 6px 18px rgba(0,0,0,.18)}
+  .mini-sum div{display:flex;flex-direction:column;min-width:0}
+  .mini-sum small{font-family:var(--f-mono);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--head-muted)}
+  .mini-sum b{font-family:var(--f-mono);font-size:14.5px;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .mini-sum b.pos{color:#8FDCAD}.mini-sum b.neg{color:#FF8E96}
+  .mini-sum button{grid-column:1 / -1;appearance:none;border:0;border-top:1px solid #2a2a30;background:none;color:#F27A55;font-family:var(--f-mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;padding:8px 0 0;margin-top:4px;cursor:pointer;text-align:left}
+}
+
+/* Navigazione in basso (telefono) */
+.bnav{display:none}
+.more-menu{display:none}
+@media (max-width:720px){
+  .tabs{display:none}
+  .top-row{padding-block:12px}
+  main{padding-block:18px calc(92px + env(safe-area-inset-bottom,0px))}
+  .bnav{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));position:fixed;left:0;right:0;bottom:0;z-index:30;background:var(--head-bg);border-top:1px solid #26262b;padding-bottom:env(safe-area-inset-bottom,0px)}
+  .bnav button{appearance:none;border:0;background:none;color:var(--head-muted);display:flex;flex-direction:column;align-items:center;gap:3px;padding:9px 2px 8px;font:600 10.5px/1.2 var(--f-body);cursor:pointer;position:relative;min-width:0}
+  .bnav button span{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .bnav svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+  .bnav button[aria-current="page"]{color:var(--head-ink)}
+  .bnav button[aria-current="page"]::before{content:"";position:absolute;top:0;left:26%;right:26%;height:3px;background:var(--forgia);clip-path:polygon(3px 0,100% 0,calc(100% - 3px) 100%,0 100%)}
+  .more-menu:not([hidden]){display:flex;flex-direction:column;position:fixed;right:10px;bottom:calc(68px + env(safe-area-inset-bottom,0px));z-index:31;background:var(--surface);border:1px solid var(--line-strong);border-radius:4px;box-shadow:var(--shadow);min-width:220px;padding:6px}
+  .more-menu button{appearance:none;border:0;background:none;text-align:left;padding:13px 14px;font:600 15px/1.2 var(--f-body);border-radius:3px;cursor:pointer;color:var(--ink)}
+  .more-menu button[aria-current="page"]{background:var(--surface-2);box-shadow:inset 3px 0 0 var(--accent)}
+
+  .view-head{margin-bottom:14px}
+  .view-head p.lead{font-size:14px}
+  .view-head .actions,.sec-head .btn{width:100%}
+  .view-head .actions .btn{flex:1 1 auto}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  .kpis .kpi:first-child{grid-column:1 / -1}
+  .kpi{padding:12px}
+  .kpi-value{font-size:21px}
+  .kpi-sub{font-size:12px}
+  .panel-head{padding:14px 14px 8px}
+  .panel-body{padding:0 14px 14px}
+  .banner{padding:12px}
+  .banner p{font-size:13px}
+  .inp input,.inp select,.inp textarea,.search{font-size:16px}
+  .search{max-width:none}
+  .seg.scroll{flex-wrap:nowrap;overflow-x:auto;max-width:100%;scrollbar-width:none}
+  .seg.scroll::-webkit-scrollbar{display:none}
+  .seg.scroll button{white-space:nowrap;flex:none}
+
+  .tbl-wrap.cardify{background:transparent;border:0;overflow:visible}
+  .cardify .tbl thead{display:none}
+  .cardify .tbl,.cardify .tbl tbody{display:block}
+  .cardify .tbl tr{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px 12px;background:var(--surface);border:1px solid var(--line);border-radius:4px;padding:12px 14px;margin-bottom:8px}
+  .cardify .tbl td{display:block;padding:0;border:0;text-align:left;font-size:13.5px;min-width:0}
+  .cardify .tbl td.t-main{grid-column:1 / -1;order:-1;font-size:15px}
+  .cardify .tbl td.t-wide{grid-column:1 / -1}
+  .cardify .tbl td[data-label]::before{content:attr(data-label);display:block;font-family:var(--f-mono);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:3px}
+  .cardify .tbl tbody tr:hover td{background:none}
+  .cardify .tbl td[colspan]{grid-column:1 / -1}
+
+  .sheet-panel{width:100%}
+  .sh-head{padding:14px 16px 12px}
+  .sh-head h2{font-size:20px}
+  .sh-body{padding:12px}
+  .sh-foot{padding:10px 12px}
+  .sh-foot .btn{padding:10px 14px}
+  fieldset{padding:12px 12px 14px}
+  .sum{padding:16px}
+  .sum-big{font-size:28px}
+}
 @media (prefers-reduced-motion:no-preference){.sheet-panel{animation:slidein .22s ease-out}@keyframes slidein{from{transform:translateX(24px);opacity:.6}to{transform:none;opacity:1}}}
 </style>
 
@@ -316,6 +392,8 @@ legend{font-family:var(--f-mono);font-size:11px;letter-spacing:.16em;text-transf
   </div>
 </header>
 <main class="wrap" id="main"><div class="loading">CARICAMENTO DATI…</div></main>
+<nav class="bnav" id="bnav" aria-label="Sezioni"></nav>
+<div class="more-menu" id="more-menu" hidden></div>
 <div class="sheet" id="sheet" hidden></div>
 <div class="toast" id="toast" role="status" hidden></div>
 
@@ -348,15 +426,15 @@ const METHODS = ['Stampa termica','Ricamo','Sublimazione','DTF','Serigrafia','Tr
 const STATUSES = ['Preventivo','Confermato','In produzione','Spedito','Consegnato','Annullato'];
 const SOLD = ['Confermato','In produzione','Spedito','Consegnato'];
 const CHANNELS = ['Sito web','Instagram','Squadra','Circolo / club','Negozio','Marketplace','Altro'];
-const COLS = ['products','customs','suppliers','shipping','orders'];
-const DEF_SETTINGS = {iva:22, feePct:1.5, feeFixed:0.25, targetMargin:45, freeShipOver:79, extraCats:[]};
+const COLS = ['products','customs','suppliers','shipping','freight','orders'];
+const DEF_SETTINGS = {iva:22, feePct:1.5, feeFixed:0.25, targetMargin:45, freeShipOver:79, usdEur:0.88, extraCats:[]};
 const LS_KEY = 'tempra-gestionale-v1';
 
 /* ---------- Dati di esempio (modificabili o eliminabili dall'app) ---------- */
 function sampleData(){
   const P = (id,cat,name,sku,grade,colorway,sizes,supplier,cost,lotQty,lotShip,duties,packaging,baseCustoms,price,shipId,stock,specs) =>
     ({id,cat,name,sku,grade,colorway,sizes,supplier,cost,lotQty,lotShip,duties,packaging,baseCustoms,price,shipId,stock,reorder:5,specs,sample:true});
-  return {
+  const data = {
     settings:{...DEF_SETTINGS},
     suppliers:[
       {id:'f-tessile',name:'Laboratorio tessile (esempio)',country:'Portogallo',contact:'',email:'',phone:'',leadDays:35,moq:50,terms:'30% all\'ordine, saldo alla spedizione',notes:'Maglie, pantaloncini, calze. Sublimazione interna.',sample:true},
@@ -387,6 +465,11 @@ function sampleData(){
       {id:'s-world',name:'Extra UE · pacco',carrier:'Corriere internazionale',zone:'Extra UE',maxKg:5,cost:32,price:29.9,sample:true},
       {id:'s-ritiro',name:'Consegna a mano / al circolo',carrier:'—',zone:'Locale',maxKg:0,cost:0,price:0,sample:true}
     ],
+    freight:[
+      {id:'fr-aereo',name:'Cina → Italia · aereo',supplier:'f-padel',usdPerKg:5.55,fixedEur:0,terms:'DDU',transitDays:0,notes:'Quotazione fornitore: 5,55 $/kg via aerea, resa DDU.'},
+      {id:'fr-mare',name:'Cina → Italia · nave',supplier:'f-padel',usdPerKg:2.05,fixedEur:0,terms:'DDU',transitDays:0,notes:'Quotazione fornitore: 2,05 $/kg via mare, resa DDU.'},
+      {id:'fr-treno',name:'Cina → Italia · treno',supplier:'f-padel',usdPerKg:2.85,fixedEur:0,terms:'DDU',transitDays:0,notes:'Quotazione fornitore: 2,85 $/kg via ferrovia, resa DDU.'}
+    ],
     products:[
       P('p-fc01','maglia-calcio','Maglia gara FC·01','TMP-FC01-LF','PRO','Lama · Forgia','XS · S · M · L · XL · XXL','f-tessile',7.2,100,160,0,0.45,['c-logo-term','c-etichetta'],44.9,'s-it-s',60,'Tessuto tecnico lightweight + dry-fit. Inserti texture sulle spalle, fascia laterale traspirante, collo interno con stampa siliconica.'),
       P('p-fc02','pantaloncini-calcio','Pantaloncini FC·02','TMP-FC02-LF','PRO','Lama · Forgia','XS · S · M · L · XL · XXL','f-tessile',5.1,100,90,0,0.35,['c-logo-term'],29.9,'s-it-s',60,'Pannelli laterali Forgia, laccio personalizzato.'),
@@ -416,10 +499,13 @@ function sampleData(){
         items:[{pid:'p-pd05',qty:12,price:32,customs:['c-logo-squadra']},{pid:'p-pd09',qty:12,price:15,customs:['c-logo-squadra']}],sample:true}
     ]
   };
+  const byKg = {'p-pd01f':0.6, 'p-pd01a':0.6, 'p-pd02':0.25, 'p-pd04':1.5};
+  data.products.forEach(p => { p.currency = 'EUR'; p.freightId = byKg[p.id] ? 'fr-mare' : ''; p.weightKg = byKg[p.id] || 0; if(byKg[p.id]) p.lotShip = 0; });
+  return data;
 }
 
 /* ---------- Stato ---------- */
-const S = {settings:{...DEF_SETTINGS}, products:[], customs:[], suppliers:[], shipping:[], orders:[]};
+const S = {settings:{...DEF_SETTINGS}, products:[], customs:[], suppliers:[], shipping:[], freight:[], orders:[]};
 let mode = 'local';     // 'cloud' | 'local'
 let db = null;
 let readOnly = false;
@@ -438,7 +524,8 @@ const dec = (x,d=2) => Number.isFinite(x) ? x.toFixed(d).replace('.',',') : '';
 const n = v => { const x = parseFloat(String(v ?? '').replace(',','.')); return Number.isFinite(x) ? x : 0; };
 const uid = p => p + '-' + Date.now().toString(36) + Math.random().toString(36).slice(2,7);
 const clone = o => JSON.parse(JSON.stringify(o));
-const byId = (col, id) => S[col].find(x => x.id === id);
+const byId = (col, id) => (S[col] || []).find(x => x.id === id);
+const freightPerPiece = (fr, kg, lot) => n(kg) * n(fr.usdPerKg) * (n(S.settings.usdEur) || 1) + n(fr.fixedEur) / Math.max(1, n(lot) || 1);
 const allCats = () => BASE_CATS.concat(S.settings.extraCats || []);
 const catOf = id => allCats().find(c => c.id === id) || {id, code:'—', name:'Senza categoria', line:'calcio'};
 const psych = x => Number.isFinite(x) && x > 0 ? Math.ceil(x + 0.1) - 0.1 : NaN;
@@ -453,14 +540,16 @@ function toast(msg){
 /* ---------- Calcoli ---------- */
 function unitCost(p){
   const lot = Math.max(1, n(p.lotQty) || 1);
-  const purchase = n(p.cost);
-  const freight = n(p.lotShip) / lot;
-  const duties = purchase * n(p.duties) / 100;
+  const fx = n(S.settings.usdEur) || 1;
+  const purchase = n(p.cost) * (p.currency === 'USD' ? fx : 1);
+  const fr = p.freightId ? byId('freight', p.freightId) : null;
+  const freight = fr ? n(p.weightKg) * n(fr.usdPerKg) * fx + n(fr.fixedEur) / lot : n(p.lotShip) / lot;
+  const duties = fr && fr.terms === 'DDP' ? 0 : purchase * n(p.duties) / 100;
   const pack = n(p.packaging);
   let cust = 0, setup = 0;
   (p.baseCustoms || []).forEach(id => { const c = byId('customs', id); if(c){ cust += n(c.cost); setup += n(c.setup) / lot; } });
   const total = purchase + freight + duties + pack + cust + setup;
-  return {purchase, freight, duties, pack, cust: cust + setup, total, lot};
+  return {purchase, freight, duties, pack, cust: cust + setup, total, lot, fr, fx};
 }
 function priceCalc(p, price = n(p.price)){
   const st = S.settings, v = n(st.iva)/100, f = n(st.feePct)/100, F = n(st.feeFixed);
@@ -628,15 +717,31 @@ async function boot(){
 
 /* ---------- Navigazione ---------- */
 const VIEWS = [['dashboard','Dashboard'],['catalogo','Catalogo'],['personalizzazioni','Personalizzazioni'],['ordini','Ordini e preventivi'],['fornitori','Fornitori'],['spedizioni','Spedizioni'],['impostazioni','Impostazioni']];
+const ICONS = {
+  dashboard:'<path d="M4 13h6V4H4zM14 20h6v-9h-6zM4 20h6v-4H4zM14 7h6V4h-6z"/>',
+  catalogo:'<path d="M8 3 4 6l2 4 2-1v12h8V9l2 1 2-4-4-3h-2.5a2.5 2.5 0 0 1-5 0z"/>',
+  ordini:'<path d="M9 4h6v3H9z"/><path d="M15 5h3v16H6V5h3"/><path d="M9 12h6M9 16h4"/>',
+  personalizzazioni:'<path d="M5 19 16.5 7.5l-2-2L3 17v2z"/><path d="m14.5 5.5 2-2 4 4-2 2"/>',
+  altro:'<circle cx="5" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="19" cy="12" r="1.3"/>'
+};
+const BNAV = [['dashboard','Home'],['catalogo','Catalogo'],['ordini','Ordini'],['personalizzazioni','Lavorazioni'],['altro','Altro']];
+const MORE = [['spedizioni','Spedizioni e import'],['fornitori','Fornitori'],['impostazioni','Impostazioni']];
 function renderTabs(){
   $('#tabs').innerHTML = VIEWS.map(([k,l]) => `<button class="tab" data-view="${k}" ${k===view?'aria-current="page"':''}>${l}</button>`).join('');
+  const inMore = MORE.some(([k]) => k === view);
+  $('#bnav').innerHTML = BNAV.map(([k,l]) => `<button ${k === 'altro' ? 'data-more aria-haspopup="true"' : `data-view="${k}"`} ${(k === view || (k === 'altro' && inMore)) ? 'aria-current="page"' : ''}><svg viewBox="0 0 24 24" aria-hidden="true">${ICONS[k]}</svg><span>${l}</span></button>`).join('');
+  $('#more-menu').innerHTML = MORE.map(([k,l]) => `<button data-view="${k}" ${k===view?'aria-current="page"':''}>${l}</button>`).join('');
 }
-$('#tabs').addEventListener('click', e => {
-  const b = e.target.closest('[data-view]'); if(!b) return;
-  view = b.dataset.view;
+function goView(v){
+  view = v; $('#more-menu').hidden = true;
   try { localStorage.setItem('tempra-view', view); } catch(err) {}
   renderTabs(); render(); window.scrollTo({top:0});
-});
+}
+['#tabs','#bnav','#more-menu'].forEach(sel => $(sel).addEventListener('click', e => {
+  if(e.target.closest('[data-more]')){ $('#more-menu').hidden = !$('#more-menu').hidden; return; }
+  const b = e.target.closest('[data-view]'); if(b) goView(b.dataset.view);
+}));
+document.addEventListener('pointerdown', e => { if(!e.target.closest('#more-menu,#bnav')) $('#more-menu').hidden = true; });
 
 function render(){
   if(!loaded){ return; }
@@ -744,28 +849,28 @@ function vCustoms(){
   const v = n(S.settings.iva)/100;
   const rows = S.customs.slice().sort((a,b) => (a.method||'').localeCompare(b.method||'') || a.name.localeCompare(b.name)).map(c => {
     const netP = n(c.price)/(1+v), m = netP - n(c.cost);
-    return `<tr data-open-custom="${h(c.id)}"><td><b>${h(c.name)}</b></td><td>${h(c.method)}</td>
-      <td class="r num">${eur(n(c.cost))}</td><td class="r num">${n(c.setup) ? eur(n(c.setup)) : '—'}</td>
-      <td class="r num">${n(c.price) ? eur(n(c.price)) : '<span class="muted">di serie</span>'}</td>
-      <td class="r num">${n(c.price) ? eur(m) : '<span class="muted">—</span>'}</td>
-      <td><div class="chips">${(c.cats && c.cats.length ? c.cats.map(id => `<span class="chip">${h(catOf(id).code)}</span>`).join('') : '<span class="chip">Tutte</span>')}</div></td></tr>`;
+    return `<tr data-open-custom="${h(c.id)}"><td class="t-main"><b>${h(c.name)}</b></td><td data-label="Tecnica">${h(c.method)}</td>
+      <td class="r num" data-label="Costo/pz">${eur(n(c.cost))}</td><td class="r num" data-label="Impianto">${n(c.setup) ? eur(n(c.setup)) : '—'}</td>
+      <td class="r num" data-label="Prezzo cliente">${n(c.price) ? eur(n(c.price)) : '<span class="muted">di serie</span>'}</td>
+      <td class="r num" data-label="Guadagno/pz">${n(c.price) ? eur(m) : '<span class="muted">—</span>'}</td>
+      <td class="t-wide"><div class="chips">${(c.cats && c.cats.length ? c.cats.map(id => `<span class="chip">${h(catOf(id).code)}</span>`).join('') : '<span class="chip">Tutte</span>')}</div></td></tr>`;
   }).join('');
   return `${sampleBanner()}<div class="view-head"><div><p class="eyebrow">Numeri, nomi, loghi di squadra</p><h1>Personalizzazioni</h1><p class="lead">Listino delle lavorazioni: costo per pezzo, costo d'impianto una tantum (cliché, punch ricamo, telaio) e prezzo al cliente. Quelle con prezzo 0 sono "di serie" e si sommano al costo del modello.</p></div>
   <div class="actions"><button class="btn primary" data-act="new-custom" ${readOnly?'disabled':''}>Nuova personalizzazione</button></div></div>
-  <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Lavorazione</th><th>Tecnica</th><th class="r">Costo/pz</th><th class="r">Impianto</th><th class="r">Prezzo cliente</th><th class="r">Guadagno/pz</th><th>Categorie</th></tr></thead><tbody>${rows || '<tr><td colspan="7" class="muted">Nessuna personalizzazione.</td></tr>'}</tbody></table></div>
+  <div class="tbl-wrap cardify"><table class="tbl"><thead><tr><th>Lavorazione</th><th>Tecnica</th><th class="r">Costo/pz</th><th class="r">Impianto</th><th class="r">Prezzo cliente</th><th class="r">Guadagno/pz</th><th>Categorie</th></tr></thead><tbody>${rows || '<tr><td colspan="7" class="muted">Nessuna personalizzazione.</td></tr>'}</tbody></table></div>
   <p class="help">Prezzo cliente IVA inclusa. Guadagno/pz = prezzo senza IVA − costo per pezzo; l'impianto si paga una volta per riga d'ordine.</p>`;
 }
 
 function vOrders(){
   const list = S.orders.filter(o => ui.orderStatus === 'all' || o.status === ui.orderStatus).sort((a,b) => (b.date||'').localeCompare(a.date||'') || (b.number||'').localeCompare(a.number||''));
   const rows = list.map(o => { const c = orderCalc(o);
-    return `<tr data-open-order="${h(o.id)}"><td class="mono">${h(o.number)}</td><td class="num">${fmtDate(o.date)}</td><td><b>${h(o.customer||'—')}</b><div class="muted" style="font-size:12.5px">${h(o.channel||'')}</div></td>
-      <td class="r num">${c.pieces}</td><td class="r num">${eur(c.total)}</td><td class="r num">${eur(c.profit)}</td><td class="r"><span class="pill ${c.profit<0?'bad':(c.margin < n(S.settings.targetMargin)/100 ? 'warn':'ok')}">${pct(c.margin)}</span></td>
-      <td><span class="st ${h((o.status||'').replace(/ /g,'-'))}">${h(o.status)}</span></td></tr>`; }).join('');
+    return `<tr data-open-order="${h(o.id)}"><td class="mono" data-label="Numero">${h(o.number)}</td><td class="num" data-label="Data">${fmtDate(o.date)}</td><td class="t-main"><b>${h(o.customer||'—')}</b><div class="muted" style="font-size:12.5px">${h(o.channel||'')}</div></td>
+      <td class="r num" data-label="Pezzi">${c.pieces}</td><td class="r num" data-label="Totale">${eur(c.total)}</td><td class="r num" data-label="Utile">${eur(c.profit)}</td><td class="r" data-label="Margine"><span class="pill ${c.profit<0?'bad':(c.margin < n(S.settings.targetMargin)/100 ? 'warn':'ok')}">${pct(c.margin)}</span></td>
+      <td data-label="Stato"><span class="st ${h((o.status||'').replace(/ /g,'-'))}">${h(o.status)}</span></td></tr>`; }).join('');
   return `${sampleBanner()}<div class="view-head"><div><p class="eyebrow">Squadre, circoli, sito</p><h1>Ordini e preventivi</h1><p class="lead">Componi un preventivo con modelli, quantità e personalizzazioni: vedi subito totale per il cliente, costi e utile. Cambia lo stato in "Confermato" quando diventa un ordine.</p></div>
   <div class="actions"><button class="btn primary" data-act="new-order" ${readOnly?'disabled':''}>Nuovo preventivo</button></div></div>
-  <div class="filters"><div class="seg" role="group" aria-label="Stato" style="flex-wrap:wrap">${[['all','Tutti']].concat(STATUSES.map(s=>[s,s])).map(([k,l]) => `<button data-ostatus="${h(k)}" aria-pressed="${ui.orderStatus===k}">${h(l)}</button>`).join('')}</div></div>
-  <div class="tbl-wrap"><table class="tbl"><thead><tr><th>N.</th><th>Data</th><th>Cliente</th><th class="r">Pezzi</th><th class="r">Totale</th><th class="r">Utile</th><th class="r">Margine</th><th>Stato</th></tr></thead><tbody>${rows || '<tr><td colspan="8" class="muted">Nessun ordine in questo stato.</td></tr>'}</tbody></table></div>`;
+  <div class="filters"><div class="seg scroll" role="group" aria-label="Stato">${[['all','Tutti']].concat(STATUSES.map(s=>[s,s])).map(([k,l]) => `<button data-ostatus="${h(k)}" aria-pressed="${ui.orderStatus===k}">${h(l)}</button>`).join('')}</div></div>
+  <div class="tbl-wrap cardify"><table class="tbl"><thead><tr><th>N.</th><th>Data</th><th>Cliente</th><th class="r">Pezzi</th><th class="r">Totale</th><th class="r">Utile</th><th class="r">Margine</th><th>Stato</th></tr></thead><tbody>${rows || '<tr><td colspan="8" class="muted">Nessun ordine in questo stato.</td></tr>'}</tbody></table></div>`;
 }
 
 function vSuppliers(){
@@ -781,15 +886,25 @@ function vSuppliers(){
 }
 
 function vShipping(){
-  const v = n(S.settings.iva)/100;
+  const v = n(S.settings.iva)/100, fx = n(S.settings.usdEur) || 1;
+  const frRows = S.freight.map(f => {
+    const used = S.products.filter(p => p.freightId === f.id).length;
+    return `<tr data-open-freight="${h(f.id)}"><td class="t-main"><b>${h(f.name)}</b><div class="muted" style="font-size:12.5px">${h((byId('suppliers', f.supplier) || {}).name || '')}</div></td>
+      <td class="r num" data-label="$/kg">${dec(n(f.usdPerKg))} $</td><td class="r num" data-label="€/kg">${eur(n(f.usdPerKg) * fx)}</td>
+      <td class="r num" data-label="Fisso">${n(f.fixedEur) ? eur(n(f.fixedEur)) : '—'}</td>
+      <td data-label="Resa"><span class="pill ${f.terms === 'DDP' ? 'ok' : 'warn'}">${h(f.terms || 'DDU')}</span></td>
+      <td class="r num" data-label="Giorni">${n(f.transitDays) || '—'}</td><td class="r num" data-label="Modelli">${used}</td></tr>`; }).join('');
   const rows = S.shipping.map(r => { const diff = n(r.price)/(1+v) - n(r.cost);
-    return `<tr data-open-ship="${h(r.id)}"><td><b>${h(r.name)}</b><div class="muted" style="font-size:12.5px">${h(r.carrier||'')}</div></td><td>${h(r.zone||'—')}</td><td class="r num">${n(r.maxKg) ? dec(n(r.maxKg),1)+' kg' : '—'}</td>
-      <td class="r num">${eur(n(r.cost))}</td><td class="r num">${eur(n(r.price))}</td><td class="r num" style="color:${diff<0?'var(--bad)':'inherit'}">${eur(diff)}</td>
-      <td class="r num">${S.products.filter(p=>p.shipId===r.id).length}</td></tr>`; }).join('');
-  return `${sampleBanner()}<div class="view-head"><div><p class="eyebrow">Consegne</p><h1>Spedizioni</h1><p class="lead">Tariffe dei corrieri: quanto paghi tu e quanto fai pagare al cliente. Sopra ${eur(n(S.settings.freeShipOver))} di spesa la spedizione è gratuita per il cliente e il costo resta a te (modificabile in Impostazioni).</p></div>
-  <div class="actions"><button class="btn primary" data-act="new-ship" ${readOnly?'disabled':''}>Nuova tariffa</button></div></div>
-  <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Tariffa</th><th>Zona</th><th class="r">Peso max</th><th class="r">Costo tuo</th><th class="r">Prezzo cliente</th><th class="r">Differenza</th><th class="r">Modelli</th></tr></thead><tbody>${rows || '<tr><td colspan="7" class="muted">Nessuna tariffa.</td></tr>'}</tbody></table></div>
-  <p class="help">Prezzo cliente IVA inclusa. Differenza = prezzo senza IVA − costo corriere: se è negativa ogni spedizione ti costa.</p>`;
+    return `<tr data-open-ship="${h(r.id)}"><td class="t-main"><b>${h(r.name)}</b><div class="muted" style="font-size:12.5px">${h(r.carrier||'')}</div></td><td data-label="Zona">${h(r.zone||'—')}</td><td class="r num" data-label="Peso max">${n(r.maxKg) ? dec(n(r.maxKg),1)+' kg' : '—'}</td>
+      <td class="r num" data-label="Costo tuo">${eur(n(r.cost))}</td><td class="r num" data-label="Prezzo cliente">${eur(n(r.price))}</td><td class="r num" data-label="Differenza" style="color:${diff<0?'var(--bad)':'inherit'}">${eur(diff)}</td>
+      <td class="r num" data-label="Modelli">${S.products.filter(p=>p.shipId===r.id).length}</td></tr>`; }).join('');
+  return `${sampleBanner()}<div class="view-head"><div><p class="eyebrow">Import e consegne</p><h1>Spedizioni</h1><p class="lead">Due tratte: dalla fabbrica a te (tariffe al kg, entrano nel costo pieno di ogni modello) e da te al cliente (corrieri, entrano negli ordini).</p></div></div>
+  <section class="ship-sec"><div class="sec-head"><div><h2>Dalla fabbrica a te</h2><p class="help">Tariffe al kg del fornitore o dello spedizioniere. Cambio usato: 1 $ = ${dec(fx,4)} €.</p></div><button class="btn primary" data-act="new-freight" ${readOnly?'disabled':''}>Nuova tariffa import</button></div>
+  <div class="tbl-wrap cardify"><table class="tbl"><thead><tr><th>Tratta</th><th class="r">$/kg</th><th class="r">€/kg</th><th class="r">Fisso</th><th>Resa</th><th class="r">Giorni</th><th class="r">Modelli</th></tr></thead><tbody>${frRows || '<tr><td colspan="7" class="muted">Nessuna tariffa import.</td></tr>'}</tbody></table></div>
+  <p class="help">DDU: la merce arriva a destinazione ma dazi, IVA all'importazione e spese di sdoganamento sono a carico tuo. DDP: sono inclusi nella tariffa.</p></section>
+  <section class="ship-sec"><div class="sec-head"><div><h2>Da te al cliente</h2><p class="help">Sopra ${eur(n(S.settings.freeShipOver))} di spesa la spedizione è gratuita per il cliente e il costo resta a te (modificabile in Impostazioni).</p></div><button class="btn primary" data-act="new-ship" ${readOnly?'disabled':''}>Nuova tariffa corriere</button></div>
+  <div class="tbl-wrap cardify"><table class="tbl"><thead><tr><th>Tariffa</th><th>Zona</th><th class="r">Peso max</th><th class="r">Costo tuo</th><th class="r">Prezzo cliente</th><th class="r">Differenza</th><th class="r">Modelli</th></tr></thead><tbody>${rows || '<tr><td colspan="7" class="muted">Nessuna tariffa.</td></tr>'}</tbody></table></div>
+  <p class="help">Prezzo cliente IVA inclusa. Differenza = prezzo senza IVA − costo corriere: se è negativa ogni spedizione ti costa.</p></section>`;
 }
 
 function vSettings(){
@@ -804,6 +919,7 @@ function vSettings(){
       ${f('Commissione pagamenti','feePct','%','Carta, PayPal, piattaforma e-commerce')}
       ${f('Commissione fissa','feeFixed','€','Per ogni transazione')}
       ${f('Spedizione gratis da','freeShipOver','€','Totale ordine IVA incl.; 0 = mai')}
+      ${f('Cambio: 1 dollaro =','usdEur','€','Per acquisti e trasporti in $; aggiornalo quando paghi')}
     </div></div></section>
     <section class="panel"><div class="panel-head"><h2>Archivio dati</h2></div><div class="panel-body">
       <p style="margin:0 0 12px;color:var(--ink-2);font-size:14px">${mode==='cloud' ? 'I dati sono salvati nel cloud di questo artifact: li ritrovi da qualsiasi dispositivo con cui lo apri.' : 'I dati sono salvati nel browser di questo dispositivo. Esporta un backup regolarmente.'}</p>
@@ -830,7 +946,7 @@ function vSettings(){
 
 /* ---------- Eventi pagina ---------- */
 document.addEventListener('click', async e => {
-  const t = e.target.closest('[data-open-product],[data-open-order],[data-open-custom],[data-open-supplier],[data-open-ship],[data-act],[data-new-in],[data-line],[data-ostatus],[data-go],[data-del-cat]');
+  const t = e.target.closest('[data-open-product],[data-open-order],[data-open-custom],[data-open-supplier],[data-open-ship],[data-open-freight],[data-act],[data-new-in],[data-line],[data-ostatus],[data-go],[data-del-cat]');
   if(!t || t.closest('#sheet')) return;
   const d = t.dataset;
   if(d.openProduct) return openProduct(d.openProduct);
@@ -838,10 +954,11 @@ document.addEventListener('click', async e => {
   if(d.openCustom) return openCustom(d.openCustom);
   if(d.openSupplier) return openSupplier(d.openSupplier);
   if(d.openShip) return openShip(d.openShip);
+  if(d.openFreight) return openFreight(d.openFreight);
   if(d.newIn) return openProduct(null, d.newIn);
   if(d.line){ ui.line = d.line; return render(); }
   if(d.ostatus){ ui.orderStatus = d.ostatus; return render(); }
-  if(d.go){ view = d.go; renderTabs(); return render(); }
+  if(d.go) return goView(d.go);
   if(d.delCat !== undefined){ S.settings.extraCats = (S.settings.extraCats || []).filter((x,i) => i !== +d.delCat); render(); return saveSettings(); }
   switch(d.act){
     case 'new-product': return openProduct(null);
@@ -849,6 +966,7 @@ document.addEventListener('click', async e => {
     case 'new-custom': return openCustom(null);
     case 'new-supplier': return openSupplier(null);
     case 'new-ship': return openShip(null);
+    case 'new-freight': return openFreight(null);
     case 'export-csv': return exportCSV();
     case 'export-json': return offerFile('tempra-backup-' + today() + '.json', JSON.stringify(S, null, 2));
     case 'clear-sample': return armThen(t, 'Conferma: elimina esempi', clearSample);
@@ -926,6 +1044,7 @@ function openSheet(html){
   el.innerHTML = `<div class="sheet-back" data-close></div><section class="sheet-panel" role="dialog" aria-modal="true">${html}</section>`;
   el.hidden = false; document.body.classList.add('noscroll');
   el.querySelectorAll('[data-close]').forEach(b => b.addEventListener('click', closeSheet));
+  el.querySelector('.sheet-panel').addEventListener('click', e => { const j = e.target.closest('[data-jump]'); if(j){ const t = document.getElementById(j.dataset.jump); if(t) t.scrollIntoView({behavior:'smooth', block:'start'}); } });
   const first = el.querySelector('.sh-body input, .sh-body select'); if(first && window.matchMedia('(min-width:900px)').matches) first.focus();
   return el.querySelector('.sheet-panel');
 }
@@ -969,8 +1088,9 @@ function wireFooter(panel, {onSave, onDelete, onDup}){
 /* ----- Prodotto ----- */
 function openProduct(id, catId){
   const src = id ? byId('products', id) : null;
-  const d = src ? clone(src) : {id: uid('p'), cat: catId || allCats()[0].id, name:'', sku:'', grade:'PRO', colorway:'Lama · Forgia', sizes:'', supplier: S.suppliers[0]?.id || '', cost:0, lotQty:50, lotShip:0, duties:0, packaging:0, baseCustoms:[], price:0, shipId: S.shipping[0]?.id || '', stock:0, reorder:5, specs:''};
+  const d = src ? clone(src) : {id: uid('p'), cat: catId || allCats()[0].id, name:'', sku:'', grade:'PRO', colorway:'Lama · Forgia', sizes:'', supplier: S.suppliers[0]?.id || '', cost:0, lotQty:50, lotShip:0, duties:0, packaging:0, baseCustoms:[], price:0, shipId: S.shipping[0]?.id || '', stock:0, reorder:5, specs:'', currency:'EUR', freightId:'', weightKg:0};
   d.baseCustoms = d.baseCustoms || [];
+  d.currency = d.currency || 'EUR'; d.freightId = d.freightId || ''; d.weightKg = n(d.weightKg);
   const catOpts = allCats().map(c => [c.id, `${c.code} ${c.name}`]);
   const supOpts = [['','— Nessuno —']].concat(S.suppliers.map(f => [f.id, f.name]));
   const shipOpts = [['','— Nessuna —']].concat(S.shipping.map(r => [r.id, `${r.name} (${eur(n(r.cost))})`]));
@@ -981,7 +1101,7 @@ function openProduct(id, catId){
   };
   const cat = catOf(d.cat);
   const panel = openSheet(`<header class="sh-head"><div><p class="eyebrow" id="p-eyebrow">${h(cat.code)} · ${h(cat.name)}</p><h2>${src ? h(src.name || 'Modello') : 'Nuovo modello'}</h2></div><button class="icon-btn" data-close aria-label="Chiudi">✕</button></header>
-  <div class="sh-body"><div class="ed-grid"><div>
+  <div class="sh-body"><div class="ed-grid"><div><div class="mini-sum" id="mini-sum"></div>
     <fieldset><legend>Modello</legend><div class="fgrid">
       ${fld('Categoria','cat',d.cat,{options:catOpts, cls:'span2'})}
       ${fld('Nome modello','name',d.name,{ph:'Es. Maglia gara FC·01', cls:'span2'})}
@@ -993,10 +1113,13 @@ function openProduct(id, catId){
       ${fld('Specifiche e note','specs',d.specs,{area:true, cls:'full', ph:'Materiali, misure, dettagli tecnici'})}
     </div></fieldset>
     <fieldset><legend>Acquisto</legend><div class="fgrid">
-      ${fld('Prezzo di acquisto','cost',d.cost,{num:true, suf:'€/pz', hint:'Dal fornitore, IVA esclusa'})}
+      ${fld('Prezzo di acquisto','cost',d.cost,{num:true, suf:'/pz', hint:'Dal fornitore, IVA esclusa'})}
+      ${fld('Valuta','currency',d.currency,{options:[['EUR','€ Euro'],['USD','$ Dollari USA']], hint:`1 $ = ${dec(n(S.settings.usdEur),4)} € (Impostazioni)`})}
       ${fld('Pezzi per lotto','lotQty',d.lotQty,{num:true, suf:'pz', hint:'Quantità ordinata (o minimo)'})}
-      ${fld('Trasporto del lotto','lotShip',d.lotShip,{num:true, suf:'€', hint:'Corriere/import diviso sui pezzi'})}
-      ${fld('Dazi doganali','duties',d.duties,{num:true, suf:'%', hint:'Sul prezzo di acquisto; 0 se UE'})}
+      ${fld('Trasporto dalla fabbrica','freightId',d.freightId,{options:[['','Costo del lotto, lo inserisco io']].concat(S.freight.map(f => [f.id, `${f.name} · ${dec(n(f.usdPerKg))} $/kg ${f.terms||''}`])), cls:'span2'})}
+      <div id="fr-manual" ${d.freightId ? 'hidden' : ''}>${fld('Trasporto del lotto','lotShip',d.lotShip,{num:true, suf:'€', hint:'Corriere/import diviso sui pezzi'})}</div>
+      <div id="fr-kg" ${d.freightId ? '' : 'hidden'}>${fld('Peso per pezzo','weightKg',d.weightKg,{num:true, suf:'kg', hint:'Lordo con imballo; se voluminoso usa il peso volumetrico'})}</div>
+      ${fld('Dazi doganali','duties',d.duties,{num:true, suf:'%', hint:'Sul valore merce; 0 se fornitore UE'})}
       ${fld('Packaging ed etichette','packaging',d.packaging,{num:true, suf:'€/pz', hint:'Scatola, hangtag, busta'})}
     </div></fieldset>
     <fieldset><legend>Personalizzazioni di serie</legend><p class="help" style="margin:0 0 10px">Lavorazioni sempre presenti sul capo (logo TEMPRA, etichetta). Il costo d'impianto è diviso sui pezzi del lotto.</p><div id="bc-box">${customsBox()}</div></fieldset>
@@ -1022,9 +1145,9 @@ function openProduct(id, catId){
       <div class="legend-inline"><span><i class="seg-cost"></i>Costo</span><span><i class="seg-tax"></i>IVA + commissioni</span><span><i class="seg-profit"></i>Utile</span></div>
       <dl>
         <dt class="sub-h">Costo per pezzo</dt>
-        <dt>Acquisto</dt><dd>${eur(c.uc.purchase)}</dd>
-        <dt>Trasporto (lotto ÷ ${c.uc.lot})</dt><dd>${eur(c.uc.freight)}</dd>
-        <dt>Dazi</dt><dd>${eur(c.uc.duties)}</dd>
+        <dt>Acquisto${d.currency === 'USD' ? ` (${dec(n(d.cost))} $)` : ''}</dt><dd>${eur(c.uc.purchase)}</dd>
+        <dt>${c.uc.fr ? `Trasporto ${h(c.uc.fr.name.split('·').pop().trim())} (${dec(n(d.weightKg))} kg × ${dec(n(c.uc.fr.usdPerKg))} $)` : `Trasporto (lotto ÷ ${c.uc.lot})`}</dt><dd>${eur(c.uc.freight)}</dd>
+        <dt>Dazi${c.uc.fr && c.uc.fr.terms === 'DDP' ? ' (inclusi nel trasporto)' : ''}</dt><dd>${eur(c.uc.duties)}</dd>
         <dt>Packaging</dt><dd>${eur(c.uc.pack)}</dd>
         <dt>Personalizzazioni di serie</dt><dd>${eur(c.uc.cust)}</dd>
         <dt class="tot">Costo pieno</dt><dd class="tot">${eur(c.uc.total)}</dd>
@@ -1038,14 +1161,19 @@ function openProduct(id, catId){
       </dl>
       <div class="sum-note"><span>Prezzo consigliato per margine ${n(S.settings.targetMargin)}%: <b>${eur(c.suggested)}</b></span>${readOnly || !Number.isFinite(c.suggested) ? '' : '<button class="btn sm" data-use-suggested>Usa questo prezzo</button>'}</div>
       <div class="sum-note">${c.ship ? `<span>Spedizione ${h(c.ship.name)}: se la offri gratis l'utile scende a <b>${eur(c.profitFreeShip)}</b>; se la fai pagare ${eur(n(c.ship.price))} diventa <b>${eur(c.profitPaidShip)}</b>.</span>` : '<span>Scegli una spedizione tipica per vedere l\'effetto sul margine.</span>'}
+        ${S.freight.length && n(d.weightKg) > 0 ? `<span>Trasporto per pezzo con ${dec(n(d.weightKg))} kg: ${S.freight.map(f => `${h(f.name.split('·').pop().trim())} <b>${eur(freightPerPiece(f, d.weightKg, c.uc.lot))}</b>`).join(' · ')}.</span>` : ''}
+        ${c.uc.fr && !n(d.weightKg) ? '<span>Inserisci il peso per pezzo per calcolare il trasporto al kg.</span>' : ''}
+        ${c.uc.fr && c.uc.fr.terms !== 'DDP' ? '<span>Resa DDU: dazi, IVA all\'importazione e sdoganamento li paghi all\'arrivo. I dazi sono nella riga Dazi; l\'IVA import la recuperi con la partita IVA.</span>' : ''}
         <span>Lotto da ${c.uc.lot} pz: investimento <b>${eur(c.uc.total * c.uc.lot)}</b>, utile potenziale <b>${eur(c.profit * c.uc.lot)}</b>.</span>
         <span>Magazzino: ${n(d.stock)} caricati, ${soldQty(d.id)} venduti, <b>${av} disponibili</b>.</span></div>
     </div>`;
+    $('#mini-sum').innerHTML = `<div><small>Costo pieno</small><b>${eur(c.uc.total)}</b></div><div><small>Utile/pz</small><b class="${c.profit<0?'neg':'pos'}">${eur(c.profit)}</b></div><div><small>Margine</small><b>${pct(c.margin)}</b></div><button type="button" data-jump="p-sum">Scheda prezzo completa ↓</button>`;
     const us = $('#p-sum [data-use-suggested]');
     if(us) us.addEventListener('click', () => { d.price = c.suggested; $('#f-price').value = c.suggested.toFixed(2); sum(); });
   };
   bindFields(panel, d, (k) => {
     if(k === 'cat'){ const cc = catOf(d.cat); $('#p-eyebrow').textContent = `${cc.code} · ${cc.name}`; $('#bc-box').innerHTML = customsBox(); }
+    if(k === 'freightId'){ $('#fr-manual').hidden = !!d.freightId; $('#fr-kg').hidden = !d.freightId; }
     sum();
   });
   panel.addEventListener('change', e => {
@@ -1161,6 +1289,39 @@ function openShip(id){
   });
 }
 
+/* ----- Tariffa import ----- */
+function openFreight(id){
+  const src = id ? byId('freight', id) : null;
+  const d = src ? clone(src) : {id: uid('fr'), name:'', supplier:'', usdPerKg:0, fixedEur:0, terms:'DDU', transitDays:0, notes:''};
+  const supOpts = [['','— Qualsiasi —']].concat(S.suppliers.map(f => [f.id, f.name]));
+  const panel = openSheet(`<header class="sh-head"><div><p class="eyebrow">Trasporto dalla fabbrica</p><h2>${src ? h(src.name) : 'Nuova tariffa import'}</h2></div><button class="icon-btn" data-close aria-label="Chiudi">✕</button></header>
+  <div class="sh-body"><div class="ed-grid"><div><fieldset><legend>Tariffa</legend><div class="fgrid">
+    ${fld('Nome','name',d.name,{cls:'span2', ph:'Es. Cina → Italia · nave'})}
+    ${fld('Fornitore / spedizioniere','supplier',d.supplier,{options:supOpts, cls:'span2'})}
+    ${fld('Prezzo al kg','usdPerKg',d.usdPerKg,{num:true, suf:'$/kg'})}
+    ${fld('Resa','terms',d.terms,{options:[['DDU','DDU · dazi e IVA a carico tuo'],['DDP','DDP · dazi inclusi']]})}
+    ${fld('Spese fisse per spedizione','fixedEur',d.fixedEur,{num:true, suf:'€', hint:'Sdoganamento, consegna finale; divise sui pezzi del lotto'})}
+    ${fld('Tempo di transito','transitDays',d.transitDays,{num:true, suf:'giorni'})}
+    ${fld('Note','notes',d.notes,{area:true, cls:'full'})}
+  </div></fieldset></div><aside class="ed-sum" id="fr-sum"></aside></div></div>
+  ${footer(!src, src ? 'Salva modifiche' : 'Crea tariffa')}`);
+  const sum = () => {
+    const fx = n(S.settings.usdEur) || 1, kg = n(d.usdPerKg) * fx;
+    const ex = [[0.25,'Cover'],[0.6,'Racchetta'],[1.5,'Borsa'],[10,'Collo da 10 kg']];
+    $('#fr-sum').innerHTML = `<div class="sum"><p class="eyebrow">In euro</p><div class="sum-big">${eur(kg)}<small>al kg</small></div>
+      <span class="pill ${d.terms === 'DDP' ? 'ok' : 'warn'}">${d.terms === 'DDP' ? 'Dazi inclusi' : 'Dazi esclusi'}</span>
+      <dl><dt class="sub-h">Esempi (senza spese fisse)</dt>${ex.map(([w,l]) => `<dt>${l} · ${dec(w)} kg</dt><dd>${eur(w * kg)}</dd>`).join('')}</dl>
+      <div class="sum-note"><span>${d.terms === 'DDP' ? 'Con DDP i modelli che usano questa tariffa non conteggiano i dazi.' : 'Con DDU all\'arrivo paghi dazi, IVA all\'importazione e sdoganamento. Metti i dazi % nella scheda di ogni modello e le spese fisse qui sopra.'}</span>
+      <span>Cambio 1 $ = ${dec(fx,4)} € (lo cambi in Impostazioni).</span></div></div>`;
+  };
+  bindFields(panel, d, sum); sum();
+  wireFooter(panel, {
+    onSave: async () => { if(!d.name.trim()){ toast('Dai un nome alla tariffa'); return; } delete d.sample; closeSheet(); if(await saveDoc('freight', d)) toast('Tariffa import salvata'); },
+    onDelete: async () => { closeSheet(); await deleteDoc('freight', d.id); toast('Tariffa eliminata'); },
+    onDup: () => { const c = clone(d); c.id = uid('fr'); c.name += ' (copia)'; delete c.sample; closeSheet(); saveDoc('freight', c).then(ok => ok && openFreight(c.id)); }
+  });
+}
+
 /* ----- Ordine / preventivo ----- */
 function nextNumber(){
   const max = S.orders.reduce((m,o) => Math.max(m, parseInt(String(o.number||'').replace(/\D/g,''),10) || 0), 0);
@@ -1184,7 +1345,7 @@ function openOrder(id){
   }).join('') || '<p class="muted" style="margin:0">Aggiungi almeno un modello.</p>';
   const shipOpts = [['','— Nessuna —']].concat(S.shipping.map(r => [r.id, `${r.name} · ${eur(n(r.price))} al cliente`]));
   const panel = openSheet(`<header class="sh-head"><div><p class="eyebrow mono">${h(d.number)}</p><h2>${src ? (d.status === 'Preventivo' ? 'Preventivo' : 'Ordine') + ' ' + h(d.customer || '') : 'Nuovo preventivo'}</h2></div><button class="icon-btn" data-close aria-label="Chiudi">✕</button></header>
-  <div class="sh-body"><div class="ed-grid"><div>
+  <div class="sh-body"><div class="ed-grid"><div><div class="mini-sum" id="mini-sum"></div>
     <fieldset><legend>Cliente</legend><div class="fgrid">
       ${fld('Cliente / squadra','customer',d.customer,{cls:'span2', ph:'Es. ASD Nome squadra'})}
       ${fld('Data','date',d.date,{type:'date'})}
@@ -1207,6 +1368,7 @@ function openOrder(id){
     const c = orderCalc(d);
     c.lines.forEach((l, i) => { const el = $('#ol-tot-' + i); if(el) el.innerHTML = `<small>${eur(l.unitFull)}/pz</small>${eur(l.gross)}`; });
     const free = n(S.settings.freeShipOver) > 0 && (c.sub - c.discount) >= n(S.settings.freeShipOver);
+    $('#mini-sum').innerHTML = `<div><small>Totale</small><b>${eur(c.total)}</b></div><div><small>Utile</small><b class="${c.profit<0?'neg':'pos'}">${eur(c.profit)}</b></div><div><small>Margine</small><b>${pct(c.margin)}</b></div><button type="button" data-jump="o-sum">Riepilogo completo ↓</button>`;
     $('#o-sum').innerHTML = `<div class="sum"><p class="eyebrow">Riepilogo</p><div class="sum-big">${eur(c.total)}<small>totale cliente</small></div>
       <span class="pill ${c.profit<0?'bad':(c.margin < n(S.settings.targetMargin)/100 ? 'warn':'ok')}">Margine ${pct(c.margin)}</span>
       <dl><dt class="sub-h">Cliente paga</dt>
