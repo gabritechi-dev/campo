@@ -617,8 +617,11 @@ function purchaseCalc(a){
   });
   const trf = fr || (a.items && a.items[0] && byId('products', a.items[0].pid) ? productFreight(byId('products', a.items[0].pid)) : null);
   if(trf && n(trf.fixedEur)) freight += n(trf.fixedEur);
-  const total = goods + freight + n(a.extraCost);
-  return {goods, weight, freight, pieces, missingKg, total, due: total - n(a.deposit), tr: trf, bySup};
+  let design = 0; const designs = [];
+  if(a.isSample && a.status !== 'Annullato') new Set((a.items || []).map(it => it.pid)).forEach(pid => { const p = byId('products', pid);
+    if(p && n(p.designCost) > 0 && designOwner(pid, a) === a.id){ design += n(p.designCost); designs.push(p.name); } });
+  const total = goods + freight + n(a.extraCost) + design;
+  return {design, designs, goods, weight, freight, pieces, missingKg, total, due: total - n(a.deposit), tr: trf, bySup};
 }
 function soldQty(pid){
   let q = 0;
@@ -629,8 +632,7 @@ function orderCalc(o){
   const st = S.settings, v = n(st.iva)/100, f = n(st.feePct)/100, F = n(st.feeFixed);
   let goods = 0, custGross = 0, goodsCost = 0, custCost = 0, pieces = 0, weight = 0, importFreight = 0, missingKg = 0, design = 0;
   const designs = [];
-  new Set((o.items || []).map(it => it.pid)).forEach(pid => { const p = byId('products', pid);
-    if(p && n(p.designCost) > 0 && o.status !== 'Annullato' && designOwner(pid, o) === o.id){ design += n(p.designCost); designs.push(p.name); } });
+
   const ofr = o.freightId ? byId('freight', o.freightId) : null;
   const lines = (o.items || []).map(it => {
     const p = byId('products', it.pid);
@@ -675,13 +677,12 @@ function orderCalc(o){
     profit: profitAfterFees, margin: net > 0 ? profitAfterFees / net : NaN, pieces,
     weight, importFreight, missingKg, design, designs, rate, parcels, zone, auto, importRate: ofr};
 }
-/* Il design di un modello si paga una volta: va nel primo ordine (per data) che lo contiene,
-   preferendo gli ordini confermati ai preventivi; gli annullati non contano. */
+/* Il design di un modello si paga una volta, nel primo ordine campione al fornitore
+   (per data) che contiene quel modello; gli annullati non contano. */
 function designOwner(pid, draft){
-  const list = S.orders.filter(o => !draft || o.id !== draft.id).concat(draft ? [draft] : [])
-    .filter(o => o.status !== 'Annullato' && (o.items || []).some(it => it.pid === pid && n(it.qty) > 0));
-  const sold = list.filter(o => SOLD.includes(o.status));
-  const pool = sold.length ? sold : list;
+  const list = S.purchases.filter(a => !draft || a.id !== draft.id).concat(draft ? [draft] : [])
+    .filter(a => a.isSample && a.status !== 'Annullato' && (a.items || []).some(it => it.pid === pid && n(it.qty) > 0));
+  const pool = list;
   pool.sort((a,b) => (a.date||'').localeCompare(b.date||'') || (a.number||'').localeCompare(b.number||''));
   return pool[0] ? pool[0].id : null;
 }
@@ -982,7 +983,7 @@ function vPurchases(){
       <td class="t-main"><b>${h(a.supplier ? (f ? f.name : 'Fornitore non indicato') : 'Più fornitori: ' + purchaseSuppliers(a).map(id => (byId('suppliers', id) || {name:'?'}).name).join(', '))}</b><div class="muted" style="font-size:12.5px">${(a.items||[]).map(it => h((byId('products', it.pid)||{name:'?'}).name) + ' ×' + n(it.qty)).join(' · ')}</div></td>
       <td class="r num" data-label="Pezzi">${c.pieces}</td><td class="r num" data-label="Peso">${dec(c.weight,1)} kg</td><td class="r num" data-label="Totale">${eur(c.total)}</td><td class="r num" data-label="Da pagare">${eur(c.due)}</td>
       <td data-label="Arrivo" class="num">${a.status === 'Arrivato' ? 'arrivato' : (a.expected ? fmtDate(a.expected) : h((c.tr && c.tr.transitDays) || '—'))}</td>
-      <td data-label="Stato"><span class="st p-${h(a.status.replace(/ /g,'-'))}">${h(a.status)}</span></td></tr>`; }).join('');
+      <td data-label="Stato"><span class="st p-${h(a.status.replace(/ /g,'-'))}">${h(a.status)}</span>${a.isSample ? ' <span class="st">Campione</span>' : ''}</td></tr>`; }).join('');
   return `${sampleBanner()}<div class="view-head"><div><p class="eyebrow">Ordini ai fornitori</p><h1>Acquisti</h1><p class="lead">Segna cosa devi ordinare e cosa hai già ordinato: merce, peso, trasporto e quanto resta da pagare. Quando imposti "Arrivato", i pezzi entrano in magazzino da soli.</p></div>
   <div class="actions"><button class="btn primary" data-act="new-purchase" ${readOnly?'disabled':''}>Nuovo ordine fornitore</button></div></div>
   <div class="kpis">
@@ -1247,7 +1248,7 @@ function openProduct(id, catId){
       <div id="duties-box">${fld('Dazi doganali','duties',d.duties,{num:true, suf:'%', hint:'Sul valore merce; 0 se fornitore UE'})}</div>
       <div id="duties-ddp" class="fld"><span>Dazi doganali</span><p class="help" style="margin:4px 0 0">Inclusi nella tariffa DDP del trasporto: non si pagano a parte.</p></div>
       ${fld('Packaging ed etichette','packaging',d.packaging,{num:true, suf:'€/pz', hint:'Scatola, hangtag, busta'})}
-      ${fld('Design del modello','designCost',d.designCost,{num:true, suf:'€ una tantum', hint:'Pagato una volta: va nel primo ordine con questo modello'})}
+      ${fld('Design del modello','designCost',d.designCost,{num:true, suf:'€ una tantum', hint:'Una volta sola: va nel primo ordine campione al fornitore'})}
     </div></fieldset>
     <fieldset><legend>Personalizzazioni di serie</legend><p class="help" style="margin:0 0 10px">Lavorazioni sempre presenti sul capo (logo TEMPRA, etichetta). Il costo d'impianto è diviso sui pezzi del lotto.</p><div id="bc-box">${customsBox()}</div></fieldset>
     <fieldset><legend>Vendita e magazzino</legend><div class="fgrid">
@@ -1291,7 +1292,7 @@ function openProduct(id, catId){
         ${S.freight.length && n(d.weightKg) > 0 ? `<span>Trasporto per pezzo con ${fmtKg(d.weightKg, d.weightUnit)}: ${S.freight.map(f => `${h(f.name.split('·').pop().trim())} <b>${eur(freightPerPiece(f, d.weightKg, c.uc.lot))}</b>`).join(' · ')}.</span>` : ''}
         ${c.uc.fr && !n(d.weightKg) ? '<span>Inserisci il peso per pezzo per calcolare il trasporto al kg.</span>' : ''}
         ${c.uc.fr && c.uc.fr.terms !== 'DDP' ? '<span>Resa DDU: dazi, IVA all\'importazione e sdoganamento li paghi all\'arrivo. I dazi sono nella riga Dazi; l\'IVA import la recuperi con la partita IVA.</span>' : ''}
-        ${n(d.designCost) > 0 ? (() => { const own = designOwner(d.id); const o = own && byId('orders', own); return `<span>Design ${eur(n(d.designCost))}: ${o ? `conteggiato nell'ordine <b>${h(o.number)}</b> (${h(o.customer || '')})` : 'verrà conteggiato nel primo ordine con questo modello'}. Si ripaga con <b>${c.profit > 0 ? Math.ceil(n(d.designCost) / c.profit) : '—'} pezzi</b>.</span>`; })() : ''}
+        ${n(d.designCost) > 0 ? (() => { const own = designOwner(d.id); const o = own && byId('purchases', own); return `<span>Design ${eur(n(d.designCost))}: ${o ? `conteggiato nell'ordine campione <b>${h(o.number)}</b>` : 'verrà conteggiato nel primo ordine campione al fornitore con questo modello'}. Si ripaga con <b>${c.profit > 0 ? Math.ceil(n(d.designCost) / c.profit) : '—'} pezzi</b>.</span>`; })() : ''}
         <span>Lotto da ${c.uc.lot} pz: investimento <b>${eur(c.uc.total * c.uc.lot)}</b>, utile potenziale <b>${eur(c.profit * c.uc.lot)}</b>.</span>
         <span>Magazzino: ${n(d.stock)} iniziali${arr ? ` + ${arr} arrivati dai fornitori` : ''}, ${soldQty(d.id)} venduti, <b>${av} disponibili</b>${inc ? `, ${inc} in arrivo` : ''}.</span></div>
     </div>`;
@@ -1454,6 +1455,7 @@ function openPurchase(id){
       ${fld('Stato','status',d.status,{options:PSTATUS.map(x=>[x,x]), hint:'"Arrivato" carica i pezzi in magazzino'})}
       ${fld('Trasporto','freightId',d.freightId,{options:frOpts, cls:'span2'})}
       ${fld('Arrivo previsto','expected',d.expected,{type:'date'})}
+      <label class="fld full"><span>Tipo di ordine</span><div class="check"><input type="checkbox" id="pa-sample" ${d.isSample ? 'checked' : ''} ${readOnly?'disabled':''}><span>Ordine campione<small>Aggiunge in automatico il costo di design dei modelli, una sola volta per modello</small></span></div></label>
     </div></fieldset>
     <fieldset><legend>Articoli</legend><div id="pl-box">${linesHtml()}</div>
       <div class="actions" style="margin-top:12px"><button class="btn sm" data-padd ${readOnly?'disabled':''}>+ Aggiungi modello</button><button class="btn sm" data-preorder ${readOnly?'disabled':''}>+ Tutti quelli da riordinare</button></div>
@@ -1475,10 +1477,14 @@ function openPurchase(id){
         ${Object.keys(c.bySup).length > 1 ? `<dt class="sub-h">Merce per fornitore</dt>${Object.entries(c.bySup).map(([k, v]) => `<dt>${h((byId('suppliers', k) || {name:'Senza fornitore'}).name)} · ${v.pieces} pz</dt><dd>${eur(v.goods)}</dd>`).join('')}<dt class="sub-h">Spedizione unica</dt>` : ''}
         <dt>Trasporto${c.tr ? ' ' + h(c.tr.name.split('·').pop().trim()) : ''} (${dec(c.weight,1)} kg)</dt><dd>${eur(c.freight)}</dd>
         <dt>Altri costi</dt><dd>${eur(n(d.extraCost))}</dd>
+        ${c.design ? `<dt>Design (${h(c.designs.join(', '))})</dt><dd>${eur(c.design)}</dd>` : ''}
         <dt class="tot">Totale</dt><dd class="tot">${eur(c.total)}</dd>
         <dt>Acconto pagato</dt><dd>−${eur(n(d.deposit))}</dd>
         <dt class="tot">Da pagare</dt><dd class="tot">${eur(c.due)}</dd></dl>
-      <div class="sum-note">${c.tr && c.tr.terms === 'DDP' ? '<span>Resa DDP: dazi inclusi nel trasporto.</span>' : ''}
+      <div class="sum-note">${d.isSample ? (() => { const skip = [...new Set(d.items.map(it => it.pid))].map(id => byId('products', id)).filter(p => p && n(p.designCost) > 0 && designOwner(p.id, d) !== d.id);
+          const none = [...new Set(d.items.map(it => it.pid))].map(id => byId('products', id)).filter(p => p && !n(p.designCost));
+          return (skip.length ? `<span>Design già pagato in un altro campione: ${h(skip.map(p => p.name).join(', '))}.</span>` : '') + (none.length ? `<span>Senza costo di design nella scheda: ${h(none.map(p => p.name).join(', '))}.</span>` : ''); })() : ''}
+        ${c.tr && c.tr.terms === 'DDP' ? '<span>Resa DDP: dazi inclusi nel trasporto.</span>' : ''}
         ${c.tr && c.tr.transitDays ? `<span>Tempi: ${h(c.tr.transitDays)} dalla partenza.</span>` : ''}
         ${c.missingKg ? `<span style="color:#FF8E96">${c.missingKg} pz senza peso: il trasporto è sottostimato.</span>` : ''}
         <span>Cambio 1 $ = ${dec(fx,4)} €.</span></div></div>`;
@@ -1492,6 +1498,7 @@ function openPurchase(id){
     if(k === 'currency'){ it.currency = el.value; sum(); return; }
     it[k] = n(el.value); sum(); };
   panel.addEventListener('input', lh); panel.addEventListener('change', lh);
+  panel.querySelector('#pa-sample').addEventListener('change', e => { d.isSample = e.target.checked; sum(); });
   panel.addEventListener('click', e => {
     const rm = e.target.closest('[data-prm]'); if(rm){ d.items.splice(+rm.dataset.prm, 1); redraw(); return; }
     if(e.target.closest('[data-padd]')){ addLine(d.supplier ? S.products.find(p => p.supplier === d.supplier) : null); redraw(); return; }
@@ -1505,7 +1512,7 @@ function openPurchase(id){
   wireFooter(panel, {
     onSave: async () => { d.items = d.items.filter(it => it.pid && n(it.qty) > 0); if(!d.items.length){ toast('Aggiungi almeno un modello'); return; } delete d.sample; closeSheet(); if(await saveDoc('purchases', d)) toast(d.status === 'Arrivato' ? 'Salvato: pezzi caricati in magazzino' : 'Ordine fornitore salvato'); },
     onDelete: async () => { closeSheet(); await deleteDoc('purchases', d.id); toast('Ordine fornitore eliminato'); },
-    onDup: () => { const c = clone(d); c.id = uid('a'); c.number = nextPurchaseNumber(); c.date = today(); c.status = 'Da ordinare'; c.deposit = 0; c.expected = ''; delete c.sample; closeSheet(); saveDoc('purchases', c).then(ok => ok && openPurchase(c.id)); }
+    onDup: () => { const c = clone(d); c.id = uid('a'); c.number = nextPurchaseNumber(); c.date = today(); c.status = 'Da ordinare'; c.deposit = 0; c.expected = ''; c.isSample = false; delete c.sample; closeSheet(); saveDoc('purchases', c).then(ok => ok && openPurchase(c.id)); }
   });
 }
 
@@ -1612,7 +1619,6 @@ function openOrder(id){
         <dt>di cui IVA</dt><dd>${eur(c.vat)}</dd><dt>Imponibile</dt><dd>${eur(c.net)}</dd>
         <dt class="sub-h">Tuoi costi</dt>
         <dt>Merce (costo pieno)</dt><dd>${eur(c.goodsCost)}</dd><dt>Personalizzazioni + impianti</dt><dd>${eur(c.custCost)}</dd>
-        ${c.design ? `<dt>Design (una tantum: ${h(c.designs.join(', '))})</dt><dd>${eur(c.design)}</dd>` : ''}
         <dt>Corriere${c.rate ? ` (${h(c.rate.name)}${c.parcels > 1 ? ' × ' + c.parcels : ''})` : ''}</dt><dd>${eur(c.shipCost)}</dd><dt>Commissioni pagamento</dt><dd>${eur(c.fees)}</dd>
         <dt class="tot">Utile netto</dt><dd class="tot ${c.profit<0?'neg':'pos'}">${eur(c.profit)}</dd></dl>
       <div class="sum-note"><span>${c.pieces} pezzi · media <b>${eur(c.pieces ? c.total / c.pieces : NaN)}</b> a pezzo per il cliente.</span>

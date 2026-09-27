@@ -31,7 +31,7 @@ mostrano sempre in alto costo, utile e margine.
 
 - **Costo pieno** = acquisto (in € o in $ al cambio impostato) + trasporto + dazi % + packaging + personalizzazioni di serie (impianto diviso sul lotto)
 - **Trasporto** = peso per pezzo × tariffa $/kg × cambio + spese fisse ÷ pezzi del lotto; in alternativa un costo del lotto inserito a mano. Con resa DDP i dazi non si sommano
-- **Design**: costo una tantum per modello, conteggiato solo nel primo ordine (per data, prima i confermati) che contiene quel modello
+- **Design**: costo una tantum per modello, aggiunto in automatico al primo ordine campione al fornitore (Acquisti) che contiene quel modello
 - **Spedizione ordini**: in automatico dal peso totale sceglie la tariffa della zona e il numero di colli; gratis sopra soglia. Ogni ordine può usare una tratta import diversa (es. aereo per urgenze)
 - **Prezzo netto** = prezzo di vendita ÷ (1 + IVA)
 - **Utile per pezzo** = prezzo netto − costo pieno − commissioni (% sul prezzo + quota fissa)
