@@ -427,9 +427,11 @@ const STATUSES = ['Preventivo','Confermato','In produzione','Spedito','Consegnat
 const SOLD = ['Confermato','In produzione','Spedito','Consegnato'];
 const CHANNELS = ['Sito web','Instagram','Squadra','Circolo / club','Negozio','Marketplace','Altro'];
 const COLS = ['products','customs','suppliers','shipping','freight','orders'];
-const DEF_SETTINGS = {iva:22, feePct:1.5, feeFixed:0.25, targetMargin:45, freeShipOver:79, usdEur:0.88, extraCats:[]};
+const DEF_SETTINGS = {iva:22, feePct:1.5, feeFixed:0.25, targetMargin:45, freeShipOver:79, usdEur:0.88, defaultFreight:'fr-mare', extraCats:[]};
 const LS_KEY = 'tempra-gestionale-v1';
 
+const SAMPLE_KG = {'p-fc01':0.2,'p-fc02':0.15,'p-fc03':0.1,'p-fc09':0.5,'p-fc10':1.3,'p-fc11':0.9,'p-fc12':0.45,'p-pd01f':0.6,'p-pd01a':0.6,'p-pd02':0.25,'p-pd03':0.25,'p-pd04':1.5,'p-pd05':0.2,'p-pd06':0.15,'p-pd09':0.1,'p-pd10':0.05,'p-pd11':0.2,'p-pd12':0.05};
+const ZONES = ['Italia','UE','Extra UE','Locale'];
 /* ---------- Dati di esempio (modificabili o eliminabili dall'app) ---------- */
 function sampleData(){
   const P = (id,cat,name,sku,grade,colorway,sizes,supplier,cost,lotQty,lotShip,duties,packaging,baseCustoms,price,shipId,stock,specs) =>
@@ -466,9 +468,9 @@ function sampleData(){
       {id:'s-ritiro',name:'Consegna a mano / al circolo',carrier:'—',zone:'Locale',maxKg:0,cost:0,price:0,sample:true}
     ],
     freight:[
-      {id:'fr-aereo',name:'Cina → Italia · aereo',supplier:'f-padel',usdPerKg:5.55,fixedEur:0,terms:'DDU',transitDays:0,notes:'Quotazione fornitore: 5,55 $/kg via aerea, resa DDU.'},
-      {id:'fr-mare',name:'Cina → Italia · nave',supplier:'f-padel',usdPerKg:2.05,fixedEur:0,terms:'DDU',transitDays:0,notes:'Quotazione fornitore: 2,05 $/kg via mare, resa DDU.'},
-      {id:'fr-treno',name:'Cina → Italia · treno',supplier:'f-padel',usdPerKg:2.85,fixedEur:0,terms:'DDU',transitDays:0,notes:'Quotazione fornitore: 2,85 $/kg via ferrovia, resa DDU.'}
+      {id:'fr-aereo',name:'Cina → Italia · aereo',supplier:'f-padel',usdPerKg:5.7,fixedEur:0,terms:'DDP',transitDays:'10–14 gg lavorativi',notes:'Quotazione fornitore del 02/09/2026: 5,7 $/kg via aerea, DDP.'},
+      {id:'fr-mare',name:'Cina → Italia · nave',supplier:'f-padel',usdPerKg:2.2,fixedEur:0,terms:'DDP',transitDays:'35–45 gg lavorativi',notes:'Quotazione fornitore del 02/09/2026: 2,2 $/kg via mare, DDP.'},
+      {id:'fr-treno',name:'Cina → Italia · treno',supplier:'f-padel',usdPerKg:3,fixedEur:0,terms:'DDP',transitDays:'25–30 gg lavorativi',notes:'Quotazione fornitore del 02/09/2026: 3 $/kg via ferrovia, DDP.'}
     ],
     products:[
       P('p-fc01','maglia-calcio','Maglia gara FC·01','TMP-FC01-LF','PRO','Lama · Forgia','XS · S · M · L · XL · XXL','f-tessile',7.2,100,160,0,0.45,['c-logo-term','c-etichetta'],44.9,'s-it-s',60,'Tessuto tecnico lightweight + dry-fit. Inserti texture sulle spalle, fascia laterale traspirante, collo interno con stampa siliconica.'),
@@ -499,8 +501,8 @@ function sampleData(){
         items:[{pid:'p-pd05',qty:12,price:32,customs:['c-logo-squadra']},{pid:'p-pd09',qty:12,price:15,customs:['c-logo-squadra']}],sample:true}
     ]
   };
-  const byKg = {'p-pd01f':0.6, 'p-pd01a':0.6, 'p-pd02':0.25, 'p-pd04':1.5};
-  data.products.forEach(p => { p.currency = 'EUR'; p.freightId = byKg[p.id] ? 'fr-mare' : ''; p.weightKg = byKg[p.id] || 0; if(byKg[p.id]) p.lotShip = 0; });
+  const byKg = SAMPLE_KG;
+  data.products.forEach(p => { p.currency = 'EUR'; p.weightKg = byKg[p.id] || 0; p.freightId = p.supplier === 'f-padel' ? '' : 'manual'; if(p.supplier === 'f-padel') p.lotShip = 0; });
   return data;
 }
 
@@ -525,6 +527,7 @@ const n = v => { const x = parseFloat(String(v ?? '').replace(',','.')); return 
 const uid = p => p + '-' + Date.now().toString(36) + Math.random().toString(36).slice(2,7);
 const clone = o => JSON.parse(JSON.stringify(o));
 const byId = (col, id) => (S[col] || []).find(x => x.id === id);
+const productFreight = p => p.freightId === 'manual' ? null : (byId('freight', p.freightId) || byId('freight', S.settings.defaultFreight) || S.freight[0] || null);
 const freightPerPiece = (fr, kg, lot) => n(kg) * n(fr.usdPerKg) * (n(S.settings.usdEur) || 1) + n(fr.fixedEur) / Math.max(1, n(lot) || 1);
 const allCats = () => BASE_CATS.concat(S.settings.extraCats || []);
 const catOf = id => allCats().find(c => c.id === id) || {id, code:'—', name:'Senza categoria', line:'calcio'};
@@ -542,7 +545,7 @@ function unitCost(p){
   const lot = Math.max(1, n(p.lotQty) || 1);
   const fx = n(S.settings.usdEur) || 1;
   const purchase = n(p.cost) * (p.currency === 'USD' ? fx : 1);
-  const fr = p.freightId ? byId('freight', p.freightId) : null;
+  const fr = productFreight(p);
   const freight = fr ? n(p.weightKg) * n(fr.usdPerKg) * fx + n(fr.fixedEur) / lot : n(p.lotShip) / lot;
   const duties = fr && fr.terms === 'DDP' ? 0 : purchase * n(p.duties) / 100;
   const pack = n(p.packaging);
@@ -582,13 +585,25 @@ function soldQty(pid){
 }
 function orderCalc(o){
   const st = S.settings, v = n(st.iva)/100, f = n(st.feePct)/100, F = n(st.feeFixed);
-  let goods = 0, custGross = 0, goodsCost = 0, custCost = 0, pieces = 0;
+  let goods = 0, custGross = 0, goodsCost = 0, custCost = 0, pieces = 0, weight = 0, importFreight = 0, missingKg = 0, design = 0;
+  const designs = [];
+  new Set((o.items || []).map(it => it.pid)).forEach(pid => { const p = byId('products', pid);
+    if(p && n(p.designCost) > 0 && o.status !== 'Annullato' && designOwner(pid, o) === o.id){ design += n(p.designCost); designs.push(p.name); } });
+  const ofr = o.freightId ? byId('freight', o.freightId) : null;
   const lines = (o.items || []).map(it => {
     const p = byId('products', it.pid);
     const qty = n(it.qty), unit = n(it.price);
     let cg = 0, cc = 0, setup = 0;
     (it.customs || []).forEach(cid => { const c = byId('customs', cid); if(c){ cg += n(c.price); cc += n(c.cost); setup += n(c.setup); } });
-    const lc = p ? unitCost(p).total : 0;
+    let lc = 0;
+    if(p){
+      const uc = unitCost(p);
+      lc = uc.total;
+      if(ofr && uc.fr){ const alt = freightPerPiece(ofr, p.weightKg, uc.lot); lc += alt - uc.freight; importFreight += qty * alt; }
+      else if(uc.fr) importFreight += qty * uc.freight;
+      weight += qty * n(p.weightKg);
+      if(!n(p.weightKg)) missingKg += qty;
+    }
     const gross = qty * (unit + cg);
     const cost = qty * lc + qty * cc + setup;
     goods += qty * unit; custGross += qty * cg; goodsCost += qty * lc; custCost += qty * cc + setup; pieces += qty;
@@ -596,18 +611,45 @@ function orderCalc(o){
   });
   const sub = goods + custGross;
   const discount = sub * n(o.discountPct) / 100;
-  const shipCharged = n(o.shipCharged);
-  const rate = byId('shipping', o.shipId);
-  const shipCost = rate ? n(rate.cost) * Math.max(1, n(o.parcels) || 1) : 0;
+  const auto = o.shipAuto !== false;
+  let rate, parcels, shipCharged, zone = o.zone || (byId('shipping', o.shipId) || {}).zone || 'Italia';
+  if(auto){
+    const pick = autoShip(zone, weight);
+    rate = pick.rate; parcels = pick.parcels;
+    const free = n(st.freeShipOver) > 0 && (sub - discount) >= n(st.freeShipOver);
+    shipCharged = rate && !free ? n(rate.price) * parcels : 0;
+  } else {
+    rate = byId('shipping', o.shipId); parcels = Math.max(1, n(o.parcels) || 1); shipCharged = n(o.shipCharged);
+  }
+  const shipCost = rate ? n(rate.cost) * parcels : 0;
   const total = sub - discount + shipCharged;
   const net = total / (1 + v);
   const vat = total - net;
   const fees = total > 0 ? total * f + F : 0;
-  const costs = goodsCost + custCost + shipCost + fees;
-  const profit = net - goodsCost - custCost - shipCost;
+  const costs = goodsCost + custCost + shipCost + fees + design;
+  const profit = net - goodsCost - custCost - shipCost - design;
   const profitAfterFees = profit - fees;
   return {lines, goods, custGross, sub, discount, shipCharged, shipCost, total, net, vat, fees, goodsCost, custCost, costs,
-    profit: profitAfterFees, margin: net > 0 ? profitAfterFees / net : NaN, pieces};
+    profit: profitAfterFees, margin: net > 0 ? profitAfterFees / net : NaN, pieces,
+    weight, importFreight, missingKg, design, designs, rate, parcels, zone, auto, importRate: ofr};
+}
+/* Il design di un modello si paga una volta: va nel primo ordine (per data) che lo contiene,
+   preferendo gli ordini confermati ai preventivi; gli annullati non contano. */
+function designOwner(pid, draft){
+  const list = S.orders.filter(o => !draft || o.id !== draft.id).concat(draft ? [draft] : [])
+    .filter(o => o.status !== 'Annullato' && (o.items || []).some(it => it.pid === pid && n(it.qty) > 0));
+  const sold = list.filter(o => SOLD.includes(o.status));
+  const pool = sold.length ? sold : list;
+  pool.sort((a,b) => (a.date||'').localeCompare(b.date||'') || (a.number||'').localeCompare(b.number||''));
+  return pool[0] ? pool[0].id : null;
+}
+function autoShip(zone, kg){
+  const list = S.shipping.filter(r => (r.zone || 'Italia') === zone).sort((a,b) => (n(a.maxKg) || 1e9) - (n(b.maxKg) || 1e9));
+  if(!list.length) return {rate:null, parcels:1};
+  const fit = list.find(r => !n(r.maxKg) || n(r.maxKg) >= kg);
+  if(fit) return {rate:fit, parcels:1};
+  const big = list[list.length - 1];
+  return {rate:big, parcels:Math.max(1, Math.ceil(kg / n(big.maxKg)))};
 }
 
 /* ---------- Persistenza ---------- */
@@ -824,7 +866,7 @@ function vCatalog(){
     const rows = prods.map(p => {
       const pc = priceCalc(p), s = status(pc), av = n(p.stock) - soldQty(p.id);
       return `<button class="row" data-open-product="${h(p.id)}">
-        <span class="r-name"><b>${h(p.name)}</b><small>${h(p.sku||'—')} · ${h(p.colorway||'')}</small></span>
+        <span class="r-name"><b>${h(p.name)}</b><small>${h(p.sku||'—')} · ${n(p.weightKg) ? dec(n(p.weightKg)) + ' kg' : '<span style="color:var(--bad)">peso mancante</span>'}</small></span>
         <span class="r-grade"><span class="grade ${h(p.grade||'BASE')}">${h(p.grade||'BASE')}</span></span>
         <span class="r-num num"><small>Costo pieno</small>${eur(pc.uc.total)}</span>
         <span class="r-num num"><small>Prezzo</small>${eur(pc.price)}</span>
@@ -888,19 +930,19 @@ function vSuppliers(){
 function vShipping(){
   const v = n(S.settings.iva)/100, fx = n(S.settings.usdEur) || 1;
   const frRows = S.freight.map(f => {
-    const used = S.products.filter(p => p.freightId === f.id).length;
+    const used = S.products.filter(p => { const pf = productFreight(p); return pf && pf.id === f.id; }).length;
     return `<tr data-open-freight="${h(f.id)}"><td class="t-main"><b>${h(f.name)}</b><div class="muted" style="font-size:12.5px">${h((byId('suppliers', f.supplier) || {}).name || '')}</div></td>
       <td class="r num" data-label="$/kg">${dec(n(f.usdPerKg))} $</td><td class="r num" data-label="€/kg">${eur(n(f.usdPerKg) * fx)}</td>
       <td class="r num" data-label="Fisso">${n(f.fixedEur) ? eur(n(f.fixedEur)) : '—'}</td>
       <td data-label="Resa"><span class="pill ${f.terms === 'DDP' ? 'ok' : 'warn'}">${h(f.terms || 'DDU')}</span></td>
-      <td class="r num" data-label="Giorni">${n(f.transitDays) || '—'}</td><td class="r num" data-label="Modelli">${used}</td></tr>`; }).join('');
+      <td class="r" data-label="Tempi">${h(f.transitDays || '—')}${S.settings.defaultFreight === f.id ? ' <span class="pill neutral">Predefinita</span>' : ''}</td><td class="r num" data-label="Modelli">${used}</td></tr>`; }).join('');
   const rows = S.shipping.map(r => { const diff = n(r.price)/(1+v) - n(r.cost);
     return `<tr data-open-ship="${h(r.id)}"><td class="t-main"><b>${h(r.name)}</b><div class="muted" style="font-size:12.5px">${h(r.carrier||'')}</div></td><td data-label="Zona">${h(r.zone||'—')}</td><td class="r num" data-label="Peso max">${n(r.maxKg) ? dec(n(r.maxKg),1)+' kg' : '—'}</td>
       <td class="r num" data-label="Costo tuo">${eur(n(r.cost))}</td><td class="r num" data-label="Prezzo cliente">${eur(n(r.price))}</td><td class="r num" data-label="Differenza" style="color:${diff<0?'var(--bad)':'inherit'}">${eur(diff)}</td>
       <td class="r num" data-label="Modelli">${S.products.filter(p=>p.shipId===r.id).length}</td></tr>`; }).join('');
   return `${sampleBanner()}<div class="view-head"><div><p class="eyebrow">Import e consegne</p><h1>Spedizioni</h1><p class="lead">Due tratte: dalla fabbrica a te (tariffe al kg, entrano nel costo pieno di ogni modello) e da te al cliente (corrieri, entrano negli ordini).</p></div></div>
   <section class="ship-sec"><div class="sec-head"><div><h2>Dalla fabbrica a te</h2><p class="help">Tariffe al kg del fornitore o dello spedizioniere. Cambio usato: 1 $ = ${dec(fx,4)} €.</p></div><button class="btn primary" data-act="new-freight" ${readOnly?'disabled':''}>Nuova tariffa import</button></div>
-  <div class="tbl-wrap cardify"><table class="tbl"><thead><tr><th>Tratta</th><th class="r">$/kg</th><th class="r">€/kg</th><th class="r">Fisso</th><th>Resa</th><th class="r">Giorni</th><th class="r">Modelli</th></tr></thead><tbody>${frRows || '<tr><td colspan="7" class="muted">Nessuna tariffa import.</td></tr>'}</tbody></table></div>
+  <div class="tbl-wrap cardify"><table class="tbl"><thead><tr><th>Tratta</th><th class="r">$/kg</th><th class="r">€/kg</th><th class="r">Fisso</th><th>Resa</th><th class="r">Tempi</th><th class="r">Modelli</th></tr></thead><tbody>${frRows || '<tr><td colspan="7" class="muted">Nessuna tariffa import.</td></tr>'}</tbody></table></div>
   <p class="help">DDU: la merce arriva a destinazione ma dazi, IVA all'importazione e spese di sdoganamento sono a carico tuo. DDP: sono inclusi nella tariffa.</p></section>
   <section class="ship-sec"><div class="sec-head"><div><h2>Da te al cliente</h2><p class="help">Sopra ${eur(n(S.settings.freeShipOver))} di spesa la spedizione è gratuita per il cliente e il costo resta a te (modificabile in Impostazioni).</p></div><button class="btn primary" data-act="new-ship" ${readOnly?'disabled':''}>Nuova tariffa corriere</button></div>
   <div class="tbl-wrap cardify"><table class="tbl"><thead><tr><th>Tariffa</th><th>Zona</th><th class="r">Peso max</th><th class="r">Costo tuo</th><th class="r">Prezzo cliente</th><th class="r">Differenza</th><th class="r">Modelli</th></tr></thead><tbody>${rows || '<tr><td colspan="7" class="muted">Nessuna tariffa.</td></tr>'}</tbody></table></div>
@@ -1116,11 +1158,12 @@ function openProduct(id, catId){
       ${fld('Prezzo di acquisto','cost',d.cost,{num:true, suf:'/pz', hint:'Dal fornitore, IVA esclusa'})}
       ${fld('Valuta','currency',d.currency,{options:[['EUR','€ Euro'],['USD','$ Dollari USA']], hint:`1 $ = ${dec(n(S.settings.usdEur),4)} € (Impostazioni)`})}
       ${fld('Pezzi per lotto','lotQty',d.lotQty,{num:true, suf:'pz', hint:'Quantità ordinata (o minimo)'})}
-      ${fld('Trasporto dalla fabbrica','freightId',d.freightId,{options:[['','Costo del lotto, lo inserisco io']].concat(S.freight.map(f => [f.id, `${f.name} · ${dec(n(f.usdPerKg))} $/kg ${f.terms||''}`])), cls:'span2'})}
-      <div id="fr-manual" ${d.freightId ? 'hidden' : ''}>${fld('Trasporto del lotto','lotShip',d.lotShip,{num:true, suf:'€', hint:'Corriere/import diviso sui pezzi'})}</div>
-      <div id="fr-kg" ${d.freightId ? '' : 'hidden'}>${fld('Peso per pezzo','weightKg',d.weightKg,{num:true, suf:'kg', hint:'Lordo con imballo; se voluminoso usa il peso volumetrico'})}</div>
+      ${fld('Peso per pezzo','weightKg',d.weightKg,{num:true, suf:'kg', hint:'Lordo con imballo: calcola trasporto import e spedizione ordini'})}
+      ${fld('Trasporto dalla fabbrica','freightId',d.freightId,{options:[['',`Automatico dal peso · tratta predefinita (${h((byId('freight', S.settings.defaultFreight) || {name:'—'}).name)})`]].concat(S.freight.map(f => [f.id, `${f.name} · ${dec(n(f.usdPerKg))} $/kg ${f.terms||''}`])).concat([['manual','Costo del lotto, lo inserisco io']]), cls:'span2'})}
+      <div id="fr-manual" ${d.freightId === 'manual' ? '' : 'hidden'}>${fld('Trasporto del lotto','lotShip',d.lotShip,{num:true, suf:'€', hint:'Corriere/import diviso sui pezzi'})}</div>
       ${fld('Dazi doganali','duties',d.duties,{num:true, suf:'%', hint:'Sul valore merce; 0 se fornitore UE'})}
       ${fld('Packaging ed etichette','packaging',d.packaging,{num:true, suf:'€/pz', hint:'Scatola, hangtag, busta'})}
+      ${fld('Design del modello','designCost',d.designCost,{num:true, suf:'€ una tantum', hint:'Pagato una volta: va nel primo ordine con questo modello'})}
     </div></fieldset>
     <fieldset><legend>Personalizzazioni di serie</legend><p class="help" style="margin:0 0 10px">Lavorazioni sempre presenti sul capo (logo TEMPRA, etichetta). Il costo d'impianto è diviso sui pezzi del lotto.</p><div id="bc-box">${customsBox()}</div></fieldset>
     <fieldset><legend>Vendita e magazzino</legend><div class="fgrid">
@@ -1164,6 +1207,7 @@ function openProduct(id, catId){
         ${S.freight.length && n(d.weightKg) > 0 ? `<span>Trasporto per pezzo con ${dec(n(d.weightKg))} kg: ${S.freight.map(f => `${h(f.name.split('·').pop().trim())} <b>${eur(freightPerPiece(f, d.weightKg, c.uc.lot))}</b>`).join(' · ')}.</span>` : ''}
         ${c.uc.fr && !n(d.weightKg) ? '<span>Inserisci il peso per pezzo per calcolare il trasporto al kg.</span>' : ''}
         ${c.uc.fr && c.uc.fr.terms !== 'DDP' ? '<span>Resa DDU: dazi, IVA all\'importazione e sdoganamento li paghi all\'arrivo. I dazi sono nella riga Dazi; l\'IVA import la recuperi con la partita IVA.</span>' : ''}
+        ${n(d.designCost) > 0 ? (() => { const own = designOwner(d.id); const o = own && byId('orders', own); return `<span>Design ${eur(n(d.designCost))}: ${o ? `conteggiato nell'ordine <b>${h(o.number)}</b> (${h(o.customer || '')})` : 'verrà conteggiato nel primo ordine con questo modello'}. Si ripaga con <b>${c.profit > 0 ? Math.ceil(n(d.designCost) / c.profit) : '—'} pezzi</b>.</span>`; })() : ''}
         <span>Lotto da ${c.uc.lot} pz: investimento <b>${eur(c.uc.total * c.uc.lot)}</b>, utile potenziale <b>${eur(c.profit * c.uc.lot)}</b>.</span>
         <span>Magazzino: ${n(d.stock)} caricati, ${soldQty(d.id)} venduti, <b>${av} disponibili</b>.</span></div>
     </div>`;
@@ -1173,7 +1217,7 @@ function openProduct(id, catId){
   };
   bindFields(panel, d, (k) => {
     if(k === 'cat'){ const cc = catOf(d.cat); $('#p-eyebrow').textContent = `${cc.code} · ${cc.name}`; $('#bc-box').innerHTML = customsBox(); }
-    if(k === 'freightId'){ $('#fr-manual').hidden = !!d.freightId; $('#fr-kg').hidden = !d.freightId; }
+    if(k === 'freightId'){ $('#fr-manual').hidden = d.freightId !== 'manual'; }
     sum();
   });
   panel.addEventListener('change', e => {
@@ -1292,7 +1336,7 @@ function openShip(id){
 /* ----- Tariffa import ----- */
 function openFreight(id){
   const src = id ? byId('freight', id) : null;
-  const d = src ? clone(src) : {id: uid('fr'), name:'', supplier:'', usdPerKg:0, fixedEur:0, terms:'DDU', transitDays:0, notes:''};
+  const d = src ? clone(src) : {id: uid('fr'), name:'', supplier:'', usdPerKg:0, fixedEur:0, terms:'DDU', transitDays:'', notes:''};
   const supOpts = [['','— Qualsiasi —']].concat(S.suppliers.map(f => [f.id, f.name]));
   const panel = openSheet(`<header class="sh-head"><div><p class="eyebrow">Trasporto dalla fabbrica</p><h2>${src ? h(src.name) : 'Nuova tariffa import'}</h2></div><button class="icon-btn" data-close aria-label="Chiudi">✕</button></header>
   <div class="sh-body"><div class="ed-grid"><div><fieldset><legend>Tariffa</legend><div class="fgrid">
@@ -1301,7 +1345,8 @@ function openFreight(id){
     ${fld('Prezzo al kg','usdPerKg',d.usdPerKg,{num:true, suf:'$/kg'})}
     ${fld('Resa','terms',d.terms,{options:[['DDU','DDU · dazi e IVA a carico tuo'],['DDP','DDP · dazi inclusi']]})}
     ${fld('Spese fisse per spedizione','fixedEur',d.fixedEur,{num:true, suf:'€', hint:'Sdoganamento, consegna finale; divise sui pezzi del lotto'})}
-    ${fld('Tempo di transito','transitDays',d.transitDays,{num:true, suf:'giorni'})}
+    ${fld('Tempo di transito','transitDays',d.transitDays,{ph:'Es. 35–45 gg lavorativi'})}
+    <label class="fld span2"><span>Tratta predefinita</span><div class="check"><input type="checkbox" id="fr-default" ${S.settings.defaultFreight === d.id ? 'checked' : ''} ${readOnly?'disabled':''}><span>Usa questa tratta per tutti i modelli impostati su "automatico"</span></div></label>
     ${fld('Note','notes',d.notes,{area:true, cls:'full'})}
   </div></fieldset></div><aside class="ed-sum" id="fr-sum"></aside></div></div>
   ${footer(!src, src ? 'Salva modifiche' : 'Crea tariffa')}`);
@@ -1316,7 +1361,9 @@ function openFreight(id){
   };
   bindFields(panel, d, sum); sum();
   wireFooter(panel, {
-    onSave: async () => { if(!d.name.trim()){ toast('Dai un nome alla tariffa'); return; } delete d.sample; closeSheet(); if(await saveDoc('freight', d)) toast('Tariffa import salvata'); },
+    onSave: async () => { if(!d.name.trim()){ toast('Dai un nome alla tariffa'); return; } delete d.sample; const def = $('#fr-default').checked; closeSheet();
+      if(def && S.settings.defaultFreight !== d.id){ S.settings.defaultFreight = d.id; saveSettings(); }
+      if(await saveDoc('freight', d)) toast('Tariffa import salvata'); },
     onDelete: async () => { closeSheet(); await deleteDoc('freight', d.id); toast('Tariffa eliminata'); },
     onDup: () => { const c = clone(d); c.id = uid('fr'); c.name += ' (copia)'; delete c.sample; closeSheet(); saveDoc('freight', c).then(ok => ok && openFreight(c.id)); }
   });
@@ -1329,8 +1376,9 @@ function nextNumber(){
 }
 function openOrder(id){
   const src = id ? byId('orders', id) : null;
-  const d = src ? clone(src) : {id: uid('o'), number: nextNumber(), date: today(), customer:'', channel:'Squadra', status:'Preventivo', shipId: S.shipping[0]?.id || '', parcels:1, shipCharged: n(S.shipping[0]?.price), discountPct:0, notes:'', items:[]};
+  const d = src ? clone(src) : {id: uid('o'), number: nextNumber(), date: today(), customer:'', channel:'Squadra', status:'Preventivo', shipAuto:true, zone:'Italia', freightId:'', shipId:'', parcels:1, shipCharged:0, discountPct:0, notes:'', items:[]};
   d.items = d.items || [];
+  d.freightId = d.freightId || ''; d.zone = d.zone || (byId('shipping', d.shipId) || {}).zone || 'Italia';
   if(!src && S.products[0]) d.items.push({pid: S.products[0].id, qty: 1, price: n(S.products[0].price), customs: []});
   const prodOpts = () => allCats().map(c => { const ps = S.products.filter(p => p.cat === c.id); return ps.length ? `<optgroup label="${h(c.code)} ${h(c.name)}">${ps.map(p => `<option value="${h(p.id)}">${h(p.name)} · ${eur(n(p.price))}</option>`).join('')}</optgroup>` : ''; }).join('');
   const linesHtml = () => d.items.map((it, i) => {
@@ -1355,10 +1403,16 @@ function openOrder(id){
     <fieldset><legend>Articoli</legend><div id="ol-box">${linesHtml()}</div>
       <div class="actions" style="margin-top:12px"><button class="btn sm" data-add-line ${readOnly?'disabled':''}>+ Aggiungi modello</button></div>
       <p class="help">Prezzo per pezzo IVA inclusa, già scontato se fai un prezzo squadra. Le personalizzazioni spuntate si applicano a tutti i pezzi della riga; l'impianto viene conteggiato una volta.</p></fieldset>
-    <fieldset><legend>Spedizione e sconto</legend><div class="fgrid">
-      ${fld('Tariffa','shipId',d.shipId,{options:shipOpts, cls:'span2'})}
-      ${fld('Colli','parcels',d.parcels,{num:true, suf:'n.'})}
-      ${fld('Spedizione addebitata','shipCharged',d.shipCharged,{num:true, suf:'€', hint:'Quanto paga il cliente'})}
+    <fieldset><legend>Trasporto dalla fabbrica</legend><div class="fgrid">
+      ${fld('Tratta import per questo ordine','freightId',d.freightId,{options:[['','Quella di ogni modello']].concat(S.freight.map(f => [f.id, `${f.name} · ${dec(n(f.usdPerKg))} $/kg · ${f.transitDays || ''}`])), cls:'full', hint:'Es. aereo per un ordine urgente: ricalcola il trasporto sul peso dei pezzi'})}
+      <div class="full" id="imp-info"></div>
+    </div></fieldset>
+    <fieldset><legend>Spedizione al cliente e sconto</legend><div class="fgrid">
+      <label class="fld full"><span>Calcolo</span><div class="check"><input type="checkbox" id="ship-auto" ${d.shipAuto !== false ? 'checked' : ''} ${readOnly?'disabled':''}><span>Automatico dal peso: sceglie la tariffa e i colli nella zona, gratis sopra ${eur(n(S.settings.freeShipOver))}</span></div></label>
+      ${fld('Zona','zone',d.zone,{options:ZONES.map(z => [z,z])})}
+      <div class="span2 ship-man" ${d.shipAuto !== false ? 'hidden' : ''}>${fld('Tariffa','shipId',d.shipId,{options:shipOpts})}</div>
+      <div class="ship-man" ${d.shipAuto !== false ? 'hidden' : ''}>${fld('Colli','parcels',d.parcels,{num:true, suf:'n.'})}</div>
+      <div class="ship-man" ${d.shipAuto !== false ? 'hidden' : ''}>${fld('Spedizione addebitata','shipCharged',d.shipCharged,{num:true, suf:'€', hint:'Quanto paga il cliente'})}</div>
       ${fld('Sconto','discountPct',d.discountPct,{num:true, suf:'%', hint:'Sulla merce'})}
       ${fld('Note','notes',d.notes,{area:true, cls:'full'})}
     </div></fieldset>
@@ -1366,6 +1420,9 @@ function openOrder(id){
   ${footer(!src, src ? 'Salva modifiche' : 'Crea preventivo')}`);
   const sum = () => {
     const c = orderCalc(d);
+    if(c.auto){ d.shipId = c.rate ? c.rate.id : ''; d.parcels = c.parcels; d.shipCharged = c.shipCharged; }
+    const tr = c.importRate || byId('freight', S.settings.defaultFreight);
+    $('#imp-info').innerHTML = `<p class="help" style="margin:0">Peso ordine <b class="num">${dec(c.weight)} kg</b> · trasporto import <b class="num">${eur(c.importFreight)}</b> (già nel costo merce)${c.importFreight > 0 && tr && tr.transitDays ? ` · arrivo ${h(tr.transitDays)} dalla partenza` : ''}${c.missingKg ? ` · <span style="color:var(--bad)">${c.missingKg} pz senza peso: inseriscilo nella scheda del modello</span>` : ''}</p>`;
     c.lines.forEach((l, i) => { const el = $('#ol-tot-' + i); if(el) el.innerHTML = `<small>${eur(l.unitFull)}/pz</small>${eur(l.gross)}`; });
     const free = n(S.settings.freeShipOver) > 0 && (c.sub - c.discount) >= n(S.settings.freeShipOver);
     $('#mini-sum').innerHTML = `<div><small>Totale</small><b>${eur(c.total)}</b></div><div><small>Utile</small><b class="${c.profit<0?'neg':'pos'}">${eur(c.profit)}</b></div><div><small>Margine</small><b>${pct(c.margin)}</b></div><button type="button" data-jump="o-sum">Riepilogo completo ↓</button>`;
@@ -1379,15 +1436,14 @@ function openOrder(id){
         <dt>di cui IVA</dt><dd>${eur(c.vat)}</dd><dt>Imponibile</dt><dd>${eur(c.net)}</dd>
         <dt class="sub-h">Tuoi costi</dt>
         <dt>Merce (costo pieno)</dt><dd>${eur(c.goodsCost)}</dd><dt>Personalizzazioni + impianti</dt><dd>${eur(c.custCost)}</dd>
-        <dt>Corriere</dt><dd>${eur(c.shipCost)}</dd><dt>Commissioni pagamento</dt><dd>${eur(c.fees)}</dd>
+        ${c.design ? `<dt>Design (una tantum: ${h(c.designs.join(', '))})</dt><dd>${eur(c.design)}</dd>` : ''}
+        <dt>Corriere${c.rate ? ` (${h(c.rate.name)}${c.parcels > 1 ? ' × ' + c.parcels : ''})` : ''}</dt><dd>${eur(c.shipCost)}</dd><dt>Commissioni pagamento</dt><dd>${eur(c.fees)}</dd>
         <dt class="tot">Utile netto</dt><dd class="tot ${c.profit<0?'neg':'pos'}">${eur(c.profit)}</dd></dl>
       <div class="sum-note"><span>${c.pieces} pezzi · media <b>${eur(c.pieces ? c.total / c.pieces : NaN)}</b> a pezzo per il cliente.</span>
       ${free ? `<span>Sopra la soglia di ${eur(n(S.settings.freeShipOver))}: puoi offrire la spedizione gratis.</span>` : ''}</div></div>`;
   };
   const redrawLines = () => { $('#ol-box').innerHTML = linesHtml(); sum(); };
   bindFields(panel, d, (k) => {
-    if(k === 'shipId'){ const r = byId('shipping', d.shipId); const c = orderCalc(d); const free = n(S.settings.freeShipOver) > 0 && (c.sub - c.discount) >= n(S.settings.freeShipOver);
-      d.shipCharged = r && !free ? n(r.price) : 0; $('#f-shipCharged').value = d.shipCharged; }
     sum();
   });
   const lineHandler = e => {
@@ -1398,6 +1454,11 @@ function openOrder(id){
     if(k === 'pid'){ if(e.type !== 'change') return; it.pid = el.value; const p = byId('products', it.pid); it.price = p ? n(p.price) : 0; it.customs = []; redrawLines(); return; }
     it[k] = n(el.value); sum();
   };
+  panel.querySelector('#ship-auto').addEventListener('change', e => {
+    d.shipAuto = e.target.checked; panel.querySelectorAll('.ship-man').forEach(x => x.hidden = d.shipAuto);
+    if(!d.shipAuto){ $('#f-shipId').value = d.shipId; $('#f-parcels').value = d.parcels; $('#f-shipCharged').value = d.shipCharged; }
+    sum();
+  });
   panel.addEventListener('input', lineHandler);
   panel.addEventListener('change', lineHandler);
   panel.addEventListener('click', e => {
