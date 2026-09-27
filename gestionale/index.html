@@ -598,13 +598,18 @@ function arrivedQty(pid, st){
 const incomingQty = pid => arrivedQty(pid, INCOMING);
 const loadedQty = p => n(p.stock) + arrivedQty(p.id);
 const avail = p => loadedQty(p) - soldQty(p.id);
+const lineSupplier = it => (byId('products', it.pid) || {}).supplier || '';
+function purchaseSuppliers(a){ return [...new Set((a.items || []).map(lineSupplier).filter(Boolean))]; }
 function purchaseCalc(a){
   const fx = n(S.settings.usdEur) || 1;
   const fr = a.freightId ? byId('freight', a.freightId) : null;
   let goods = 0, weight = 0, freight = 0, pieces = 0, missingKg = 0;
+  const bySup = {};
   (a.items || []).forEach(it => {
     const p = byId('products', it.pid); const qty = n(it.qty);
-    goods += qty * n(it.cost) * (it.currency === 'USD' ? fx : 1); pieces += qty;
+    const val = qty * n(it.cost) * (it.currency === 'USD' ? fx : 1);
+    goods += val; pieces += qty;
+    const sk = lineSupplier(it); bySup[sk] = bySup[sk] || {goods:0, pieces:0}; bySup[sk].goods += val; bySup[sk].pieces += qty;
     if(p){ weight += qty * n(p.weightKg); if(!n(p.weightKg)) missingKg += qty;
       const pf = fr || productFreight(p);
       if(pf) freight += qty * n(p.weightKg) * n(pf.usdPerKg) * fx;
@@ -613,7 +618,7 @@ function purchaseCalc(a){
   const trf = fr || (a.items && a.items[0] && byId('products', a.items[0].pid) ? productFreight(byId('products', a.items[0].pid)) : null);
   if(trf && n(trf.fixedEur)) freight += n(trf.fixedEur);
   const total = goods + freight + n(a.extraCost);
-  return {goods, weight, freight, pieces, missingKg, total, due: total - n(a.deposit), tr: trf};
+  return {goods, weight, freight, pieces, missingKg, total, due: total - n(a.deposit), tr: trf, bySup};
 }
 function soldQty(pid){
   let q = 0;
@@ -974,7 +979,7 @@ function vPurchases(){
     .sort((a,b) => PSTATUS.indexOf(a.status) - PSTATUS.indexOf(b.status) || (b.date||'').localeCompare(a.date||''));
   const rows = list.map(a => { const c = purchaseCalc(a), f = byId('suppliers', a.supplier);
     return `<tr data-open-purchase="${h(a.id)}"><td class="mono" data-label="Numero" style="white-space:nowrap">${h(a.number)}</td><td class="num" data-label="Data">${fmtDate(a.date)}</td>
-      <td class="t-main"><b>${h(f ? f.name : 'Fornitore non indicato')}</b><div class="muted" style="font-size:12.5px">${(a.items||[]).map(it => h((byId('products', it.pid)||{name:'?'}).name) + ' ×' + n(it.qty)).join(' · ')}</div></td>
+      <td class="t-main"><b>${h(a.supplier ? (f ? f.name : 'Fornitore non indicato') : 'Più fornitori: ' + purchaseSuppliers(a).map(id => (byId('suppliers', id) || {name:'?'}).name).join(', '))}</b><div class="muted" style="font-size:12.5px">${(a.items||[]).map(it => h((byId('products', it.pid)||{name:'?'}).name) + ' ×' + n(it.qty)).join(' · ')}</div></td>
       <td class="r num" data-label="Pezzi">${c.pieces}</td><td class="r num" data-label="Peso">${dec(c.weight,1)} kg</td><td class="r num" data-label="Totale">${eur(c.total)}</td><td class="r num" data-label="Da pagare">${eur(c.due)}</td>
       <td data-label="Arrivo" class="num">${a.status === 'Arrivato' ? 'arrivato' : (a.expected ? fmtDate(a.expected) : h((c.tr && c.tr.transitDays) || '—'))}</td>
       <td data-label="Stato"><span class="st p-${h(a.status.replace(/ /g,'-'))}">${h(a.status)}</span></td></tr>`; }).join('');
@@ -1426,19 +1431,25 @@ function openPurchase(id){
   const src = id ? byId('purchases', id) : null;
   const d = src ? clone(src) : {id: uid('a'), number: nextPurchaseNumber(), supplier: S.suppliers[0]?.id || '', date: today(), status:'Da ordinare', freightId:'', expected:'', extraCost:0, deposit:0, notes:'', items:[]};
   d.items = d.items || [];
-  const supOpts = [['','— Scegli —']].concat(S.suppliers.map(f => [f.id, f.name]));
+  const supOpts = [['','Più fornitori · spedizione unica']].concat(S.suppliers.map(f => [f.id, f.name]));
   const frOpts = [['','Quella di ogni modello']].concat(S.freight.map(f => [f.id, `${f.name} · ${dec(n(f.usdPerKg))} $/kg · ${f.transitDays || ''}`]));
-  const prodOpts = sel => { const mine = S.products.filter(p => p.supplier === d.supplier), others = S.products.filter(p => p.supplier !== d.supplier);
-    const o = p => `<option value="${h(p.id)}" ${p.id===sel?'selected':''}>${h(p.name)}</option>`;
-    return (sel ? '' : '<option value="">— scegli —</option>') + (mine.length ? `<optgroup label="Di questo fornitore">${mine.map(o).join('')}</optgroup>` : '') + (others.length ? `<optgroup label="Altri modelli">${others.map(o).join('')}</optgroup>` : ''); };
+  const prodOpts = sel => { const o = p => `<option value="${h(p.id)}" ${p.id===sel?'selected':''}>${h(p.name)}</option>`;
+    const head = sel ? '' : '<option value="">— scegli —</option>';
+    if(!d.supplier){
+      const groups = S.suppliers.map(f => [f.name, S.products.filter(p => p.supplier === f.id)]).concat([['Senza fornitore', S.products.filter(p => !byId('suppliers', p.supplier))]]);
+      return head + groups.filter(g => g[1].length).map(([l, ps]) => `<optgroup label="${h(l)}">${ps.map(o).join('')}</optgroup>`).join('');
+    }
+    const mine = S.products.filter(p => p.supplier === d.supplier), others = S.products.filter(p => p.supplier !== d.supplier);
+    return head + (mine.length ? `<optgroup label="Di questo fornitore">${mine.map(o).join('')}</optgroup>` : '') + (others.length ? `<optgroup label="Altri modelli">${others.map(o).join('')}</optgroup>` : ''); };
   const linesHtml = () => d.items.map((it, i) => `<div class="ol"><label class="fld ol-prod"><span>Modello</span><div class="inp"><select data-pi="${i}" data-pk="pid" ${readOnly?'disabled':''}>${prodOpts(it.pid)}</select></div></label>
     <label class="fld"><span>Pezzi</span><div class="inp"><input type="number" min="0" step="1" inputmode="numeric" data-pi="${i}" data-pk="qty" value="${n(it.qty)}" ${readOnly?'disabled':''}></div></label>
     <label class="fld"><span>Costo/pz</span><div class="inp"><input type="number" step="any" inputmode="decimal" data-pi="${i}" data-pk="cost" value="${n(it.cost)}" ${readOnly?'disabled':''}><select data-pi="${i}" data-pk="currency" style="flex:none;width:auto;border-left:1px solid var(--line)" ${readOnly?'disabled':''}><option value="EUR" ${it.currency!=='USD'?'selected':''}>€</option><option value="USD" ${it.currency==='USD'?'selected':''}>$</option></select></div></label>
-    <div class="ol-tot num" id="pl-tot-${i}"></div><button class="icon-btn" data-prm="${i}" aria-label="Rimuovi riga" ${readOnly?'disabled':''}>✕</button></div>`).join('') || '<p class="muted" style="margin:0">Aggiungi i modelli da ordinare.</p>';
+    <div class="ol-tot num" id="pl-tot-${i}"></div><button class="icon-btn" data-prm="${i}" aria-label="Rimuovi riga" ${readOnly?'disabled':''}>✕</button>
+    ${!d.supplier && it.pid ? `<div class="ol-cust muted" style="font-size:12.5px">Fornitore: ${h((byId('suppliers', lineSupplier(it)) || {name:'non indicato nella scheda modello'}).name)}</div>` : ''}</div>`).join('') || '<p class="muted" style="margin:0">Aggiungi i modelli da ordinare.</p>';
   const panel = openSheet(`<header class="sh-head"><div><p class="eyebrow mono">${h(d.number)}</p><h2>${src ? 'Ordine fornitore' : 'Nuovo ordine fornitore'}</h2></div><button class="icon-btn" data-close aria-label="Chiudi">✕</button></header>
   <div class="sh-body"><div class="ed-grid"><div><div class="mini-sum" id="mini-sum"></div>
     <fieldset><legend>Ordine</legend><div class="fgrid">
-      ${fld('Fornitore','supplier',d.supplier,{options:supOpts, cls:'span2'})}
+      ${fld('Fornitore','supplier',d.supplier,{options:supOpts, cls:'span2', hint:'"Più fornitori": articoli da fabbriche diverse, un solo spedizioniere'})}
       ${fld('Data','date',d.date,{type:'date'})}
       ${fld('Stato','status',d.status,{options:PSTATUS.map(x=>[x,x]), hint:'"Arrivato" carica i pezzi in magazzino'})}
       ${fld('Trasporto','freightId',d.freightId,{options:frOpts, cls:'span2'})}
@@ -1461,6 +1472,7 @@ function openPurchase(id){
     $('#pa-sum').innerHTML = `<div class="sum"><p class="eyebrow">Riepilogo</p><div class="sum-big">${eur(c.total)}<small>totale ordine</small></div>
       <span class="pill ${d.status === 'Da ordinare' ? 'bad' : d.status === 'Arrivato' ? 'ok' : 'warn'}">${h(d.status)}</span>
       <dl><dt>Merce (${c.pieces} pz)</dt><dd>${eur(c.goods)}</dd>
+        ${Object.keys(c.bySup).length > 1 ? `<dt class="sub-h">Merce per fornitore</dt>${Object.entries(c.bySup).map(([k, v]) => `<dt>${h((byId('suppliers', k) || {name:'Senza fornitore'}).name)} · ${v.pieces} pz</dt><dd>${eur(v.goods)}</dd>`).join('')}<dt class="sub-h">Spedizione unica</dt>` : ''}
         <dt>Trasporto${c.tr ? ' ' + h(c.tr.name.split('·').pop().trim()) : ''} (${dec(c.weight,1)} kg)</dt><dd>${eur(c.freight)}</dd>
         <dt>Altri costi</dt><dd>${eur(n(d.extraCost))}</dd>
         <dt class="tot">Totale</dt><dd class="tot">${eur(c.total)}</dd>
@@ -1473,7 +1485,7 @@ function openPurchase(id){
   };
   const redraw = () => { $('#pl-box').innerHTML = linesHtml(); sum(); };
   const addLine = p => d.items.push({pid: p ? p.id : '', qty: p ? Math.max(1, n(p.lotQty) || 1) : 1, cost: p ? n(p.cost) : 0, currency: p && p.currency === 'USD' ? 'USD' : 'EUR'});
-  bindFields(panel, d, k => { if(k === 'supplier') redraw(); else sum(); });
+  bindFields(panel, d, k => { if(k === 'supplier'){ if(!d.supplier && !d.freightId && S.settings.defaultFreight){ d.freightId = S.settings.defaultFreight; $('#f-freightId').value = d.freightId; } redraw(); } else sum(); });
   const lh = e => { const el = e.target; if(!el.dataset || el.dataset.pi === undefined) return; const it = d.items[+el.dataset.pi]; if(!it) return;
     const k = el.dataset.pk;
     if(k === 'pid'){ if(e.type !== 'change') return; const p = byId('products', el.value); it.pid = el.value; if(p){ it.cost = n(p.cost); it.currency = p.currency === 'USD' ? 'USD' : 'EUR'; if(!n(it.qty) || it.qty === 1) it.qty = Math.max(1, n(p.lotQty) || 1); } redraw(); return; }
@@ -1482,7 +1494,7 @@ function openPurchase(id){
   panel.addEventListener('input', lh); panel.addEventListener('change', lh);
   panel.addEventListener('click', e => {
     const rm = e.target.closest('[data-prm]'); if(rm){ d.items.splice(+rm.dataset.prm, 1); redraw(); return; }
-    if(e.target.closest('[data-padd]')){ addLine(S.products.find(p => p.supplier === d.supplier)); redraw(); return; }
+    if(e.target.closest('[data-padd]')){ addLine(d.supplier ? S.products.find(p => p.supplier === d.supplier) : null); redraw(); return; }
     if(e.target.closest('[data-preorder]')){
       const low = S.products.filter(p => (!d.supplier || p.supplier === d.supplier) && avail(p) + incomingQty(p.id) <= n(p.reorder ?? 5) && !d.items.some(it => it.pid === p.id));
       low.forEach(addLine); redraw(); toast(low.length ? `${low.length} modelli aggiunti` : 'Niente da riordinare per questo fornitore');
