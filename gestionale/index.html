@@ -1,0 +1,1715 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+</head>
+<body>
+<!-- APP:START -->
+<title>TEMPRA Gestionale</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Chakra+Petch:wght@500;600;700&family=Space+Mono:wght@400;700&display=swap">
+<style>
+:root{
+  --lama:#111113; --pietra:#EEE8E2; --forgia:#E5502A; --acciaio:#2F3B45; --cenere:#8C8782; --sabbia:#D9D2CA;
+  --bg:#EEE8E2; --surface:#F7F3EE; --surface-2:#E7E1DA; --line:#D9D2CA; --line-strong:#BDB4AA;
+  --ink:#111113; --ink-2:#45423F; --muted:#6C6762;
+  --accent:#E5502A; --accent-ink:#B0381A; --on-accent:#111113;
+  --steel:#2F3B45; --steel-soft:#DCE1E5;
+  --good:#1F6B45; --good-bg:#DAEADF; --warn:#7F5300; --warn-bg:#F2E2BE; --bad:#A01C2E; --bad-bg:#F5D7D8;
+  --bar-cost:#2F3B45; --bar-tax:#A39C94; --bar-profit:#E5502A;
+  --head-bg:#111113; --head-ink:#EEE8E2; --head-muted:#8C8782;
+  --shadow:0 18px 50px rgba(17,17,19,.22);
+  --f-display:"Chakra Petch","Arial Narrow",system-ui,sans-serif;
+  --f-body:"Archivo",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --f-mono:"Space Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#111113; --surface:#1A1A1D; --surface-2:#232327; --line:#2C2C32; --line-strong:#43434B;
+    --ink:#EEE8E2; --ink-2:#BDB6AE; --muted:#8C8782;
+    --accent:#E5502A; --accent-ink:#F27A55; --on-accent:#111113;
+    --steel:#8FA3B5; --steel-soft:#2A333B;
+    --good:#6FCB94; --good-bg:#17301F; --warn:#E9B458; --warn-bg:#352A12; --bad:#F27D86; --bad-bg:#3A1519;
+    --bar-cost:#5E7385; --bar-tax:#6B6661; --bar-profit:#E5502A;
+    --head-bg:#0A0A0B; --head-ink:#EEE8E2; --head-muted:#8C8782;
+    --shadow:0 18px 50px rgba(0,0,0,.6);
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#111113; --surface:#1A1A1D; --surface-2:#232327; --line:#2C2C32; --line-strong:#43434B;
+  --ink:#EEE8E2; --ink-2:#BDB6AE; --muted:#8C8782;
+  --accent:#E5502A; --accent-ink:#F27A55; --on-accent:#111113;
+  --steel:#8FA3B5; --steel-soft:#2A333B;
+  --good:#6FCB94; --good-bg:#17301F; --warn:#E9B458; --warn-bg:#352A12; --bad:#F27D86; --bad-bg:#3A1519;
+  --bar-cost:#5E7385; --bar-tax:#6B6661; --bar-profit:#E5502A;
+  --head-bg:#0A0A0B; --head-ink:#EEE8E2; --head-muted:#8C8782;
+  --shadow:0 18px 50px rgba(0,0,0,.6);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 var(--f-body);-webkit-font-smoothing:antialiased}
+body.noscroll{overflow:hidden}
+h1,h2,h3{font-family:var(--f-display);font-weight:600;line-height:1.1;margin:0;text-wrap:balance}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+.eyebrow{font-family:var(--f-mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--accent-ink);margin:0}
+.muted{color:var(--muted)}
+.wrap{max-width:1280px;margin:0 auto;padding-inline:16px}
+@media (min-width:720px){.wrap{padding-inline:28px}}
+
+/* Header */
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--head-bg);color:var(--head-ink);border-bottom:1px solid #26262b}
+.top-row{display:flex;align-items:center;gap:14px;padding-block:14px 10px}
+.brand{display:flex;align-items:center;gap:12px;min-width:0}
+.lama{width:30px;height:auto;fill:var(--forgia);flex:none}
+.wordmark{font-family:var(--f-display);font-weight:500;font-size:20px;letter-spacing:.28em}
+.brand-sub{font-family:var(--f-mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--head-muted);border-left:1px solid #34343a;padding-left:12px}
+.store-chip{margin-left:auto;display:inline-flex;align-items:center;gap:8px;font-family:var(--f-mono);font-size:11px;letter-spacing:.08em;color:var(--head-muted);white-space:nowrap}
+.store-chip i{width:8px;height:8px;border-radius:50%;background:var(--cenere);display:block}
+.store-chip.cloud i{background:#6FCB94}
+.store-chip.err i{background:#F27D86}
+.tabs{display:flex;gap:2px;overflow-x:auto;scrollbar-width:none;padding-bottom:0}
+.tabs::-webkit-scrollbar{display:none}
+.tab{appearance:none;border:0;background:none;color:var(--head-muted);padding:10px 14px 12px;font-family:var(--f-display);font-weight:500;font-size:14px;letter-spacing:.04em;cursor:pointer;white-space:nowrap;position:relative}
+.tab:hover{color:var(--head-ink)}
+.tab[aria-current="page"]{color:var(--head-ink)}
+.tab[aria-current="page"]::after{content:"";position:absolute;left:10px;right:10px;bottom:0;height:4px;background:var(--forgia);clip-path:polygon(4px 0,100% 0,calc(100% - 4px) 100%,0 100%)}
+@media (max-width:560px){.brand-sub{display:none}.wordmark{font-size:17px}.store-chip span{display:none}.sh-foot .btn.ghost[data-close]{display:none}}
+
+main{padding-block:26px 80px}
+.view-head{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:14px 20px;margin-bottom:20px}
+.view-head h1{font-size:clamp(28px,4vw,40px);margin-top:4px}
+.view-head p.lead{margin:6px 0 0;color:var(--ink-2);max-width:62ch}
+.actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+
+/* Buttons */
+.btn{appearance:none;display:inline-flex;align-items:center;justify-content:center;gap:8px;border:1px solid var(--line-strong);background:var(--surface);color:var(--ink);padding:9px 14px;border-radius:3px;font-weight:600;font-size:14px;cursor:pointer;text-decoration:none;white-space:nowrap}
+.btn:hover{border-color:var(--ink)}
+.btn.primary{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.btn.primary:hover{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.btn.forgia{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.btn.ghost{background:transparent;border-color:transparent}
+.btn.ghost:hover{border-color:var(--line-strong)}
+.btn.danger{color:var(--bad)}
+.btn.danger.armed{background:var(--bad);color:#fff;border-color:var(--bad)}
+.btn.sm{padding:5px 10px;font-size:13px}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.icon-btn{appearance:none;border:1px solid var(--line);background:var(--surface);width:36px;height:36px;border-radius:3px;cursor:pointer;display:inline-grid;place-items:center;flex:none;color:var(--ink-2)}
+.icon-btn:hover{border-color:var(--ink);color:var(--ink)}
+
+/* Panels */
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:4px}
+.panel-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding:16px 18px 10px}
+.panel-head h2{font-size:19px}
+.panel-body{padding:0 18px 18px}
+.grid-2{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:18px}
+
+/* KPI */
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,200px),1fr));gap:12px;margin-bottom:18px}
+.kpi{background:var(--surface);border:1px solid var(--line);border-radius:4px;padding:14px 16px 16px;display:flex;flex-direction:column;gap:4px}
+.kpi.dark{background:var(--head-bg);border-color:var(--head-bg);color:var(--head-ink)}
+.kpi.dark .kpi-label,.kpi.dark .kpi-sub{color:var(--head-muted)}
+.kpi-label{font-family:var(--f-mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.kpi-value{font-family:var(--f-display);font-weight:600;font-size:28px;line-height:1.1;font-variant-numeric:tabular-nums}
+.kpi-sub{font-size:13px;color:var(--muted)}
+
+/* Pills */
+.pill{display:inline-flex;align-items:center;gap:6px;font-family:var(--f-mono);font-size:11px;letter-spacing:.06em;padding:3px 8px;border-radius:2px;white-space:nowrap;font-weight:700}
+.pill.ok{background:var(--good-bg);color:var(--good)}
+.pill.warn{background:var(--warn-bg);color:var(--warn)}
+.pill.bad{background:var(--bad-bg);color:var(--bad)}
+.pill.neutral{background:var(--surface-2);color:var(--ink-2)}
+.grade{font-family:var(--f-mono);font-size:10.5px;letter-spacing:.14em;padding:3px 7px;border-radius:2px;font-weight:700;display:inline-block}
+.grade.BASE{background:var(--sabbia);color:#111113}
+.grade.PRO{background:#2F3B45;color:#EEE8E2}
+.grade.ELITE{background:#111113;color:#E5502A;box-shadow:inset 0 0 0 1px #3a3a40}
+.st{font-family:var(--f-mono);font-size:11px;letter-spacing:.04em;padding:3px 8px;border-radius:2px;white-space:nowrap;font-weight:700;background:var(--surface-2);color:var(--ink-2)}
+.st.Preventivo{background:var(--steel-soft);color:var(--steel)}
+.st.Confermato,.st.In-produzione{background:var(--warn-bg);color:var(--warn)}
+.st.Spedito,.st.Consegnato{background:var(--good-bg);color:var(--good)}
+.tag{display:inline-block;font-family:var(--f-mono);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;padding:2px 6px;border-radius:2px;vertical-align:2px;margin-left:6px;font-weight:700;white-space:nowrap}
+.tag.ex{border:1px dashed var(--line-strong);color:var(--muted);background:transparent}
+.tag.mine{background:var(--good-bg);color:var(--good)}
+.is-sample{opacity:.72}.is-sample:hover{opacity:1}
+.banner .seg{flex:none}
+.st.p-Da-ordinare{background:var(--bad-bg);color:var(--bad)}
+.st.p-Ordinato,.st.p-In-produzione,.st.p-In-viaggio{background:var(--warn-bg);color:var(--warn)}
+.st.p-Arrivato{background:var(--good-bg);color:var(--good)}
+.st.p-Annullato,.st.Annullato{background:var(--surface-2);color:var(--muted);text-decoration:line-through}
+
+/* Banners */
+.banner{display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px;padding:12px 16px;border-radius:4px;margin-bottom:18px;background:var(--surface);border:1px solid var(--line)}
+.banner.sample{border-left:4px solid var(--accent)}
+.banner p{margin:0;flex:1 1 280px;color:var(--ink-2);font-size:14px}
+.banner strong{color:var(--ink)}
+
+/* Filters */
+.filters{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:16px}
+.seg{display:inline-flex;border:1px solid var(--line-strong);border-radius:3px;overflow:hidden;background:var(--surface)}
+.seg button{appearance:none;border:0;background:none;padding:7px 12px;font-weight:600;font-size:13px;cursor:pointer;color:var(--ink-2)}
+.seg button+button{border-left:1px solid var(--line-strong)}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+.search{flex:1 1 220px;max-width:360px;border:1px solid var(--line-strong);background:var(--surface);border-radius:3px;padding:8px 12px}
+
+/* Catalog */
+.cat-block{margin-bottom:18px}
+.cat-head{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;padding:10px 0 8px;border-bottom:2px solid var(--ink)}
+.cat-code{font-family:var(--f-mono);font-size:12px;font-weight:700;color:var(--accent-ink);letter-spacing:.06em;min-width:48px}
+.cat-name{font-family:var(--f-display);font-weight:600;font-size:18px}
+.line-tag{font-family:var(--f-mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;padding:2px 6px;border-radius:2px}
+.line-tag.calcio{background:#111113;color:#EEE8E2;box-shadow:inset 0 0 0 1px #3a3a40}
+.line-tag.padel{background:#2F3B45;color:#EEE8E2}
+.cat-head .count{font-size:13px;color:var(--muted)}
+.cat-head .btn{margin-left:auto}
+.rows{display:flex;flex-direction:column}
+.row{display:grid;grid-template-columns:minmax(0,2.6fr) 64px repeat(3,minmax(84px,1fr)) 96px 84px;gap:12px;align-items:center;padding:11px 8px;border-bottom:1px solid var(--line);cursor:pointer;background:transparent;border-left:0;border-right:0;border-top:0;text-align:left;width:100%;appearance:none}
+.row:hover{background:var(--surface)}
+.row .r-name b{font-weight:600;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.row .r-name small{display:block;font-family:var(--f-mono);font-size:11.5px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.row .r-num{text-align:right;font-size:13.5px}
+.row .r-num small{display:none;font-family:var(--f-mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.row-labels{display:grid;grid-template-columns:minmax(0,2.6fr) 64px repeat(3,minmax(84px,1fr)) 96px 84px;gap:12px;padding:8px 8px 6px;font-family:var(--f-mono);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.row-labels span:nth-child(n+3){text-align:right}
+.empty-row{padding:14px 8px;color:var(--muted);font-size:14px;border-bottom:1px solid var(--line)}
+.low{color:var(--bad);font-weight:700}
+@media (max-width:760px){
+  .row-labels{display:none}
+  .row{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px 10px}
+  .row .r-name{grid-column:1 / 3}
+  .row .r-grade{grid-column:3 / 4;justify-self:end}
+  .row .r-num{text-align:left}
+  .row .r-num small{display:block}
+}
+
+/* Tables */
+.tbl-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:4px;background:var(--surface)}
+table.tbl{width:100%;border-collapse:collapse;font-size:14px}
+.tbl th{font-family:var(--f-mono);font-weight:400;font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);text-align:left;padding:10px 12px;border-bottom:1px solid var(--line-strong);white-space:nowrap}
+.tbl td{padding:11px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+.tbl tr:last-child td{border-bottom:0}
+.tbl tbody tr{cursor:pointer}
+.tbl tbody tr:hover td{background:var(--surface-2)}
+.tbl .r{text-align:right}
+.chips{display:flex;flex-wrap:wrap;gap:4px}
+.chip{font-family:var(--f-mono);font-size:10.5px;padding:2px 6px;border:1px solid var(--line-strong);border-radius:2px;color:var(--ink-2);white-space:nowrap}
+
+/* Margin meters */
+.meter-list{display:flex;flex-direction:column}
+.meter{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(80px,1.2fr) 62px 112px;gap:12px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line);cursor:pointer}
+.meter:last-child{border-bottom:0}
+.meter .m-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:14px}
+.meter .m-name small{font-family:var(--f-mono);color:var(--muted);font-size:11px;margin-right:6px}
+.track{position:relative;height:10px;background:var(--surface-2);border-radius:2px}
+.track .fill{position:absolute;left:0;top:0;bottom:0;background:var(--bar-cost);border-radius:0 4px 4px 0}
+.track .tick{position:absolute;top:-4px;bottom:-4px;width:2px;background:var(--accent)}
+.meter .m-val{text-align:right;font-size:13px}
+.meter .pill{justify-self:end}
+@media (max-width:520px){.meter{grid-template-columns:minmax(0,1fr) 62px 112px}.meter .track{grid-column:1 / -1;grid-row:2}}
+.legend-inline{display:flex;flex-wrap:wrap;gap:14px;font-size:12px;color:var(--muted);align-items:center}
+.legend-inline i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px;vertical-align:-1px}
+
+.list{display:flex;flex-direction:column}
+.li{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--line);cursor:pointer}
+.li:last-child{border-bottom:0}
+.li .grow{flex:1;min-width:0}
+.li .grow b{display:block;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.li .grow small{display:block;color:var(--muted);font-size:12.5px}
+
+/* Cards (suppliers) */
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,300px),1fr));gap:14px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:4px;padding:16px;cursor:pointer;display:flex;flex-direction:column;gap:10px;text-align:left;appearance:none;width:100%}
+.card:hover{border-color:var(--ink)}
+.card h3{font-size:18px}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;font-size:13.5px;margin:0}
+.kv dt{color:var(--muted);font-family:var(--f-mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;padding-top:2px}
+.kv dd{margin:0}
+
+/* Sheet */
+.sheet{position:fixed;inset:0;z-index:50}
+.sheet-back{position:absolute;inset:0;background:rgba(10,10,11,.55)}
+.sheet-panel{position:absolute;top:0;right:0;bottom:0;width:min(1120px,100%);background:var(--bg);box-shadow:var(--shadow);display:flex;flex-direction:column;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+.sh-head{display:flex;align-items:flex-start;gap:14px;padding:18px 20px 14px;border-bottom:1px solid var(--line);background:var(--surface)}
+.sh-head h2{font-size:24px;margin-top:4px}
+.sh-head .icon-btn{margin-left:auto}
+.sh-body{flex:1;overflow-y:auto;padding:20px}
+.sh-foot{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:12px 20px;border-top:1px solid var(--line);background:var(--surface)}
+.sh-foot .spacer{flex:1}
+.ed-grid{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:22px;align-items:start}
+.ed-sum{position:sticky;top:0}
+@media (max-width:900px){.ed-grid{grid-template-columns:minmax(0,1fr)}.ed-sum{position:static;order:-1}}
+fieldset{border:1px solid var(--line);border-radius:4px;background:var(--surface);margin:0 0 16px;padding:14px 16px 16px}
+legend{font-family:var(--f-mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent-ink);padding:0 6px}
+.fgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,170px),1fr));gap:12px 14px}
+.fgrid .span2{grid-column:span 2}
+.fgrid .full{grid-column:1 / -1}
+@media (max-width:420px){.fgrid .span2{grid-column:1 / -1}}
+.fld{display:flex;flex-direction:column;gap:5px;min-width:0}
+.fld > span{font-size:12.5px;font-weight:600;color:var(--ink-2)}
+.fld .hint{font-size:12px;color:var(--muted)}
+.inp{display:flex;align-items:center;border:1px solid var(--line-strong);background:var(--bg);border-radius:3px;min-width:0}
+.inp:focus-within{border-color:var(--ink);box-shadow:0 0 0 1px var(--ink)}
+.inp input,.inp select,.inp textarea{flex:1;min-width:0;border:0;background:transparent;padding:8px 10px;outline:none}
+.inp textarea{min-height:74px;resize:vertical}
+.inp .affix{padding:0 10px;color:var(--muted);font-family:var(--f-mono);font-size:12.5px;white-space:nowrap}
+.inp select{appearance:auto}
+.checks{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,240px),1fr));gap:8px}
+.check{display:flex;gap:10px;align-items:flex-start;padding:9px 10px;border:1px solid var(--line);border-radius:3px;background:var(--bg);cursor:pointer;font-size:13.5px}
+.check input{margin-top:3px;accent-color:var(--accent)}
+.check small{display:block;color:var(--muted);font-family:var(--f-mono);font-size:11px}
+.check:has(input:checked){border-color:var(--ink)}
+
+/* Price summary */
+.sum{background:var(--head-bg);color:var(--head-ink);border-radius:4px;padding:18px}
+.sum .eyebrow{color:#F27A55}
+.sum-big{font-family:var(--f-display);font-size:34px;font-weight:600;margin:6px 0 2px;font-variant-numeric:tabular-nums}
+.sum-big small{font-family:var(--f-body);font-size:13px;font-weight:400;color:var(--head-muted);margin-left:6px}
+.compbar{display:flex;gap:2px;height:14px;margin:14px 0 8px}
+.compbar span{display:block;height:100%}
+.compbar span:first-child{border-radius:2px 0 0 2px}
+.compbar span:last-child{border-radius:0 4px 4px 0}
+.seg-cost{background:#5E7385}
+.seg-tax{background:repeating-linear-gradient(135deg,#8C8782 0 3px,#5b5753 3px 6px)}
+.seg-profit{background:#E5502A}
+.sum .legend-inline{color:var(--head-muted)}
+.sum dl{margin:14px 0 0;display:grid;grid-template-columns:1fr auto;gap:0}
+.sum dt,.sum dd{padding:6px 0;border-bottom:1px solid #2a2a30;margin:0;font-size:13.5px}
+.sum dt{color:#BDB6AE}
+.sum dd{text-align:right;font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.sum dt.tot,.sum dd.tot{color:#EEE8E2;font-weight:700;border-bottom-color:#4a4a52}
+.sum dd.pos{color:#8FDCAD}.sum dd.neg{color:#FF8E96}
+.sum .sub-h{grid-column:1 / -1;font-family:var(--f-mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:#8C8782;padding:14px 0 2px;border:0}
+.sum-note{margin-top:14px;padding:12px;border:1px solid #2f2f36;border-radius:3px;font-size:13px;color:#BDB6AE;display:flex;flex-direction:column;gap:8px}
+.sum-note b{color:#EEE8E2;font-family:var(--f-mono)}
+.sum-note .btn{align-self:flex-start;background:#E5502A;border-color:#E5502A;color:#111113}
+.sum .pill{margin-top:6px}
+
+/* Order lines */
+.ol{display:grid;grid-template-columns:minmax(0,2.4fr) 76px 110px 110px 36px;gap:10px;align-items:end;padding:12px 0;border-bottom:1px dashed var(--line-strong)}
+.ol:first-child{padding-top:0}
+.ol .ol-cust{grid-column:1 / -1}
+.ol .ol-tot{text-align:right;padding-bottom:9px}
+.ol .ol-tot small{display:block;color:var(--muted);font-size:11px;font-family:var(--f-mono)}
+.mini-checks{display:flex;flex-wrap:wrap;gap:6px}
+.mini-checks label{display:inline-flex;gap:6px;align-items:center;font-size:12.5px;border:1px solid var(--line);border-radius:2px;padding:4px 8px;background:var(--bg);cursor:pointer}
+.mini-checks label:has(input:checked){border-color:var(--ink);background:var(--surface-2)}
+.mini-checks input{accent-color:var(--accent)}
+@media (max-width:640px){
+  .ol{grid-template-columns:1fr 1fr 1fr 36px}
+  .ol .ol-prod{grid-column:1 / -1}
+}
+
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:3px;font-weight:600;font-size:14px;z-index:80;box-shadow:var(--shadow);max-width:calc(100% - 32px)}
+.loading{display:grid;place-items:center;min-height:50vh;color:var(--muted);font-family:var(--f-mono);font-size:13px;letter-spacing:.1em}
+.help{font-size:13px;color:var(--muted);margin:8px 0 0}
+.copybox{width:100%;min-height:140px;font-family:var(--f-mono);font-size:12px;border:1px solid var(--line-strong);background:var(--bg);border-radius:3px;padding:10px}
+/* Sezioni spedizioni */
+.ship-sec{margin-bottom:28px}
+.sec-head{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:10px 16px;margin-bottom:10px}
+.sec-head h2{font-size:21px}
+.sec-head .help{margin-top:4px}
+
+/* Riepilogo compatto (solo schermi stretti) */
+.mini-sum{display:none}
+@media (max-width:900px){
+  .ed-sum{order:0}
+  .sh-body:has(.mini-sum){padding-top:0}
+  .mini-sum{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px 10px;align-items:end;position:sticky;top:0;z-index:3;margin:12px 0;background:var(--head-bg);color:var(--head-ink);border-radius:4px;padding:10px 12px;box-shadow:0 6px 18px rgba(0,0,0,.18)}
+  .mini-sum div{display:flex;flex-direction:column;min-width:0}
+  .mini-sum small{font-family:var(--f-mono);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--head-muted)}
+  .mini-sum b{font-family:var(--f-mono);font-size:14.5px;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .mini-sum b.pos{color:#8FDCAD}.mini-sum b.neg{color:#FF8E96}
+  .mini-sum button{grid-column:1 / -1;appearance:none;border:0;border-top:1px solid #2a2a30;background:none;color:#F27A55;font-family:var(--f-mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;padding:8px 0 0;margin-top:4px;cursor:pointer;text-align:left}
+}
+
+/* Navigazione in basso (telefono) */
+.bnav{display:none}
+.more-menu{display:none}
+@media (max-width:720px){
+  .tabs{display:none}
+  .top-row{padding-block:12px}
+  main{padding-block:18px calc(92px + env(safe-area-inset-bottom,0px))}
+  .bnav{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));position:fixed;left:0;right:0;bottom:0;z-index:30;background:var(--head-bg);border-top:1px solid #26262b;padding-bottom:env(safe-area-inset-bottom,0px)}
+  .bnav button{appearance:none;border:0;background:none;color:var(--head-muted);display:flex;flex-direction:column;align-items:center;gap:3px;padding:9px 2px 8px;font:600 10.5px/1.2 var(--f-body);cursor:pointer;position:relative;min-width:0}
+  .bnav button span{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .bnav svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+  .bnav button[aria-current="page"]{color:var(--head-ink)}
+  .bnav button[aria-current="page"]::before{content:"";position:absolute;top:0;left:26%;right:26%;height:3px;background:var(--forgia);clip-path:polygon(3px 0,100% 0,calc(100% - 3px) 100%,0 100%)}
+  .more-menu:not([hidden]){display:flex;flex-direction:column;position:fixed;right:10px;bottom:calc(68px + env(safe-area-inset-bottom,0px));z-index:31;background:var(--surface);border:1px solid var(--line-strong);border-radius:4px;box-shadow:var(--shadow);min-width:220px;padding:6px}
+  .more-menu button{appearance:none;border:0;background:none;text-align:left;padding:13px 14px;font:600 15px/1.2 var(--f-body);border-radius:3px;cursor:pointer;color:var(--ink)}
+  .more-menu button[aria-current="page"]{background:var(--surface-2);box-shadow:inset 3px 0 0 var(--accent)}
+
+  .view-head{margin-bottom:14px}
+  .view-head p.lead{font-size:14px}
+  .view-head .actions,.sec-head .btn{width:100%}
+  .view-head .actions .btn{flex:1 1 auto}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  .kpis .kpi:first-child{grid-column:1 / -1}
+  .kpi{padding:12px}
+  .kpi-value{font-size:21px}
+  .kpi-sub{font-size:12px}
+  .panel-head{padding:14px 14px 8px}
+  .panel-body{padding:0 14px 14px}
+  .banner{padding:12px}
+  .banner p{font-size:13px}
+  .inp input,.inp select,.inp textarea,.search{font-size:16px}
+  .search{max-width:none}
+  .seg.scroll{flex-wrap:nowrap;overflow-x:auto;max-width:100%;scrollbar-width:none}
+  .seg.scroll::-webkit-scrollbar{display:none}
+  .seg.scroll button{white-space:nowrap;flex:none}
+
+  .tbl-wrap.cardify{background:transparent;border:0;overflow:visible}
+  .cardify .tbl thead{display:none}
+  .cardify .tbl,.cardify .tbl tbody{display:block}
+  .cardify .tbl tr{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px 12px;background:var(--surface);border:1px solid var(--line);border-radius:4px;padding:12px 14px;margin-bottom:8px}
+  .cardify .tbl td{display:block;padding:0;border:0;text-align:left;font-size:13.5px;min-width:0}
+  .cardify .tbl td.t-main{grid-column:1 / -1;order:-1;font-size:15px}
+  .cardify .tbl td.t-wide{grid-column:1 / -1}
+  .cardify .tbl td[data-label]::before{content:attr(data-label);display:block;font-family:var(--f-mono);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:3px}
+  .cardify .tbl tbody tr:hover td{background:none}
+  .cardify .tbl td[colspan]{grid-column:1 / -1}
+
+  .sheet-panel{width:100%}
+  .sh-head{padding:14px 16px 12px}
+  .sh-head h2{font-size:20px}
+  .sh-body{padding:12px}
+  .sh-foot{padding:10px 12px}
+  .sh-foot .btn{padding:10px 14px}
+  fieldset{padding:12px 12px 14px}
+  .sum{padding:16px}
+  .sum-big{font-size:28px}
+}
+@media (prefers-reduced-motion:no-preference){.sheet-panel{animation:slidein .22s ease-out}@keyframes slidein{from{transform:translateX(24px);opacity:.6}to{transform:none;opacity:1}}}
+</style>
+
+<header class="top">
+  <div class="wrap">
+    <div class="top-row">
+      <div class="brand">
+        <svg class="lama" viewBox="0 0 418 396" role="img" aria-label="TEMPRA"><polygon points="22,0 418,0 397,83 0,83"/><polygon points="157,122 294,122 147,396 85,396"/></svg>
+        <span class="wordmark">TEMPRA</span>
+        <span class="brand-sub">Gestionale prodotti</span>
+      </div>
+      <span class="store-chip" id="store-chip"><i></i><span>Avvio…</span></span>
+    </div>
+    <nav class="tabs" id="tabs" aria-label="Sezioni"></nav>
+  </div>
+</header>
+<main class="wrap" id="main"><div class="loading">CARICAMENTO DATI…</div></main>
+<nav class="bnav" id="bnav" aria-label="Sezioni"></nav>
+<div class="more-menu" id="more-menu" hidden></div>
+<div class="sheet" id="sheet" hidden></div>
+<div class="toast" id="toast" role="status" hidden></div>
+
+<script>
+'use strict';
+/* ---------- Costanti di dominio ---------- */
+const BASE_CATS = [
+  {id:'maglia-calcio', code:'FC·01', name:'Maglie calcio', line:'calcio'},
+  {id:'pantaloncini-calcio', code:'FC·02', name:'Pantaloncini calcio', line:'calcio'},
+  {id:'calze-grip', code:'FC·03', name:'Calze grip calcio', line:'calcio'},
+  {id:'pallone', code:'FC·09', name:'Palloni calcio', line:'calcio'},
+  {id:'borsone-calcio', code:'FC·10', name:'Borsoni calcio', line:'calcio'},
+  {id:'zaino', code:'FC·11', name:'Zaini', line:'calcio'},
+  {id:'borraccia', code:'FC·12', name:'Borracce', line:'calcio'},
+  {id:'racchetta', code:'PD·01', name:'Racchette padel', line:'padel'},
+  {id:'fodera', code:'PD·02', name:'Fodere racchette', line:'padel'},
+  {id:'palline', code:'PD·03', name:'Palline padel', line:'padel'},
+  {id:'borsone-padel', code:'PD·04', name:'Borsoni padel', line:'padel'},
+  {id:'maglia-padel', code:'PD·05', name:'Maglie padel', line:'padel'},
+  {id:'pantaloncini-padel', code:'PD·06', name:'Pantaloncini padel', line:'padel'},
+  {id:'cappellino', code:'PD·09', name:'Cappellini', line:'padel'},
+  {id:'polsini', code:'PD·10', name:'Polsini', line:'padel'},
+  {id:'asciugamano', code:'PD·11', name:'Tovaglie / asciugamani', line:'padel'},
+  {id:'grip', code:'PD·12', name:'Grip padel', line:'padel'}
+];
+const LINES = {calcio:'Calcio', padel:'Padel'};
+const GRADES = ['BASE','PRO','ELITE'];
+const GRADE_DESC = {BASE:'Essenziale · allenamento', PRO:'Competizione · agonisti', ELITE:'Top di gamma · edizioni numerate'};
+const METHODS = ['Stampa termica','Ricamo','Sublimazione','DTF','Serigrafia','Transfer silicone','Incisione laser','Stampa UV','Tampografia','Altro'];
+const STATUSES = ['Preventivo','Confermato','In produzione','Spedito','Consegnato','Annullato'];
+const SOLD = ['Confermato','In produzione','Spedito','Consegnato'];
+const CHANNELS = ['Sito web','Instagram','Squadra','Circolo / club','Negozio','Marketplace','Altro'];
+const COLS = ['products','customs','suppliers','shipping','freight','orders','purchases'];
+const PSTATUS = ['Da ordinare','Ordinato','In produzione','In viaggio','Arrivato','Annullato'];
+const INCOMING = ['Ordinato','In produzione','In viaggio'];
+const DEF_SETTINGS = {iva:22, feePct:1.5, feeFixed:0.25, targetMargin:45, freeShipOver:79, usdEur:0.88, defaultFreight:'fr-mare', extraCats:[]};
+const LS_KEY = 'tempra-gestionale-v1';
+
+const SAMPLE_KG = {'p-fc01':0.2,'p-fc02':0.15,'p-fc03':0.1,'p-fc09':0.5,'p-fc10':1.3,'p-fc11':0.9,'p-fc12':0.45,'p-pd01f':0.6,'p-pd01a':0.6,'p-pd02':0.25,'p-pd03':0.25,'p-pd04':1.5,'p-pd05':0.2,'p-pd06':0.15,'p-pd09':0.1,'p-pd10':0.05,'p-pd11':0.2,'p-pd12':0.05};
+const ZONES = ['Italia','UE','Extra UE','Locale'];
+/* ---------- Dati di esempio (modificabili o eliminabili dall'app) ---------- */
+function sampleData(){
+  const P = (id,cat,name,sku,grade,colorway,sizes,supplier,cost,lotQty,lotShip,duties,packaging,baseCustoms,price,shipId,stock,specs) =>
+    ({id,cat,name,sku,grade,colorway,sizes,supplier,cost,lotQty,lotShip,duties,packaging,baseCustoms,price,shipId,stock,reorder:5,specs,sample:true});
+  const data = {
+    settings:{...DEF_SETTINGS},
+    suppliers:[
+      {id:'f-tessile',name:'Laboratorio tessile (esempio)',country:'Portogallo',contact:'',email:'',phone:'',leadDays:35,moq:50,terms:'30% all\'ordine, saldo alla spedizione',notes:'Maglie, pantaloncini, calze. Sublimazione interna.',sample:true},
+      {id:'f-padel',name:'Fabbrica racchette (esempio)',country:'Cina',contact:'',email:'',phone:'',leadDays:60,moq:100,terms:'50% anticipo, 50% prima dell\'imbarco',notes:'Racchette, cover, borse padel. Stampa logo in fabbrica.',sample:true},
+      {id:'f-accessori',name:'Grossista accessori (esempio)',country:'Italia',contact:'',email:'',phone:'',leadDays:12,moq:20,terms:'Bonifico 30 gg',notes:'Palloni, borracce, zaini, cappellini, polsini, grip.',sample:true},
+      {id:'f-stampa',name:'Laboratorio stampa e ricamo (esempio)',country:'Italia',contact:'',email:'',phone:'',leadDays:7,moq:1,terms:'Alla consegna',notes:'Nomi, numeri, loghi squadra, ricami.',sample:true}
+    ],
+    customs:[
+      {id:'c-logo-term',name:'Logo TEMPRA petto',method:'Stampa termica',cost:0.6,setup:0,price:0,cats:['maglia-calcio','maglia-padel','pantaloncini-calcio','pantaloncini-padel'],sample:true},
+      {id:'c-etichetta',name:'Etichetta collo in silicone',method:'Transfer silicone',cost:0.35,setup:40,price:0,cats:['maglia-calcio','maglia-padel'],sample:true},
+      {id:'c-logo-ricamo',name:'Logo TEMPRA ricamato',method:'Ricamo',cost:1.6,setup:35,price:0,cats:['cappellino','polsini','asciugamano','borsone-calcio','borsone-padel','zaino'],sample:true},
+      {id:'c-nome',name:'Nome giocatore sul retro',method:'Stampa termica',cost:1.8,setup:0,price:5,cats:['maglia-calcio','maglia-padel'],sample:true},
+      {id:'c-numero',name:'Numero sul retro',method:'Stampa termica',cost:2.2,setup:0,price:5,cats:['maglia-calcio'],sample:true},
+      {id:'c-numero-short',name:'Numero su pantaloncino',method:'Stampa termica',cost:1.2,setup:0,price:3,cats:['pantaloncini-calcio'],sample:true},
+      {id:'c-logo-squadra',name:'Logo squadra / circolo',method:'DTF',cost:2.4,setup:0,price:6,cats:['maglia-calcio','maglia-padel','cappellino','borsone-calcio','borsone-padel','zaino','asciugamano'],sample:true},
+      {id:'c-sponsor',name:'Sponsor sul fronte',method:'DTF',cost:3,setup:0,price:8,cats:['maglia-calcio','maglia-padel'],sample:true},
+      {id:'c-sublimazione',name:'Grafica squadra in sublimazione totale',method:'Sublimazione',cost:4.5,setup:80,price:10,cats:['maglia-calcio','maglia-padel','pantaloncini-calcio','pantaloncini-padel'],sample:true},
+      {id:'c-incisione',name:'Incisione nome su racchetta',method:'Incisione laser',cost:3.5,setup:0,price:12,cats:['racchetta'],sample:true},
+      {id:'c-uv',name:'Logo stampato su borraccia',method:'Stampa UV',cost:1.1,setup:25,price:0,cats:['borraccia'],sample:true},
+      {id:'c-nome-borsa',name:'Nome ricamato su borsa',method:'Ricamo',cost:3.8,setup:0,price:9,cats:['borsone-calcio','borsone-padel','zaino','fodera'],sample:true},
+      {id:'c-tampo',name:'Logo stampato su palla / tubo',method:'Tampografia',cost:0.3,setup:60,price:0,cats:['palline','pallone'],sample:true}
+    ],
+    shipping:[
+      {id:'s-it-s',name:'Italia · pacco piccolo',carrier:'Corriere espresso',zone:'Italia',maxKg:2,cost:5.9,price:4.9,sample:true},
+      {id:'s-it-m',name:'Italia · pacco medio',carrier:'Corriere espresso',zone:'Italia',maxKg:5,cost:7.5,price:6.9,sample:true},
+      {id:'s-it-l',name:'Italia · collo squadra',carrier:'Corriere espresso',zone:'Italia',maxKg:20,cost:12.5,price:9.9,sample:true},
+      {id:'s-eu',name:'Europa · pacco',carrier:'Corriere internazionale',zone:'UE',maxKg:5,cost:15.9,price:14.9,sample:true},
+      {id:'s-world',name:'Extra UE · pacco',carrier:'Corriere internazionale',zone:'Extra UE',maxKg:5,cost:32,price:29.9,sample:true},
+      {id:'s-ritiro',name:'Consegna a mano / al circolo',carrier:'—',zone:'Locale',maxKg:0,cost:0,price:0,sample:true}
+    ],
+    freight:[
+      {id:'fr-aereo',name:'Cina → Italia · aereo',supplier:'f-padel',usdPerKg:5.7,fixedEur:0,terms:'DDP',transitDays:'10–14 gg lavorativi',notes:'Quotazione fornitore del 02/09/2026: 5,7 $/kg via aerea, DDP.'},
+      {id:'fr-mare',name:'Cina → Italia · nave',supplier:'f-padel',usdPerKg:2.2,fixedEur:0,terms:'DDP',transitDays:'35–45 gg lavorativi',notes:'Quotazione fornitore del 02/09/2026: 2,2 $/kg via mare, DDP.'},
+      {id:'fr-treno',name:'Cina → Italia · treno',supplier:'f-padel',usdPerKg:3,fixedEur:0,terms:'DDP',transitDays:'25–30 gg lavorativi',notes:'Quotazione fornitore del 02/09/2026: 3 $/kg via ferrovia, DDP.'}
+    ],
+    products:[
+      P('p-fc01','maglia-calcio','Maglia gara FC·01','TMP-FC01-LF','PRO','Lama · Forgia','XS · S · M · L · XL · XXL','f-tessile',7.2,100,160,0,0.45,['c-logo-term','c-etichetta'],44.9,'s-it-s',60,'Tessuto tecnico lightweight + dry-fit. Inserti texture sulle spalle, fascia laterale traspirante, collo interno con stampa siliconica.'),
+      P('p-fc02','pantaloncini-calcio','Pantaloncini FC·02','TMP-FC02-LF','PRO','Lama · Forgia','XS · S · M · L · XL · XXL','f-tessile',5.1,100,90,0,0.35,['c-logo-term'],29.9,'s-it-s',60,'Pannelli laterali Forgia, laccio personalizzato.'),
+      P('p-fc03','calze-grip','Calze grip FC·03','TMP-FC03-L','PRO','Lama','S · M · L','f-accessori',2.6,50,25,0,0.2,[],16.9,'s-it-s',40,'Grip antiscivolo in silicone sotto la pianta.'),
+      P('p-fc09','pallone','Pallone FC·09','TMP-FC09-LF','PRO','Lama · Forgia','Misura 5','f-accessori',7.8,50,70,0,0.6,['c-tampo'],34.9,'s-it-m',24,'Termosaldato.'),
+      P('p-fc10','borsone-calcio','Borsone FC·10','TMP-FC10-L','BASE','Lama · Forgia','55 L','f-accessori',13.5,30,95,0,1.2,['c-logo-ricamo'],54.9,'s-it-m',15,'Scomparto scarpe separato.'),
+      P('p-fc11','zaino','Zaino FC·11','TMP-FC11-L','BASE','Lama','25 L','f-accessori',11,30,80,0,1,['c-logo-ricamo'],49.9,'s-it-m',15,'Tasca laptop, porta borraccia laterale.'),
+      P('p-fc12','borraccia','Borraccia termica FC·12','TMP-FC12-L','BASE','Lama · Forgia','750 ml','f-accessori',4.2,100,60,0,0.5,['c-uv'],24.9,'s-it-s',50,'Acciaio inox a doppia parete.'),
+      P('p-pd01f','racchetta','Racchetta PD·01 Forgia','TMP-PD01-FRG','ELITE','Lama · Forgia','360–375 g','f-padel',38,100,420,2.7,2.5,[],189,'s-it-m',20,'Forma a lacrima · carbonio 12K · nucleo EVA soft · 454 × 259,5 × 38 mm · 66 fori Ø 9 mm · bilanciamento medio.'),
+      P('p-pd01a','racchetta','Racchetta PD·01 Acciaio','TMP-PD01-ACC','PRO','Acciaio · Forgia','355–370 g','f-padel',26,100,420,2.7,2.5,[],129,'s-it-m',20,'Forma a lacrima · carbonio 3K · nucleo EVA soft.'),
+      P('p-pd02','fodera','Cover racchetta PD·02','TMP-PD02-A','PRO','Acciaio · Forgia','Unica','f-padel',4.5,100,60,2.7,0.3,[],24.9,'s-it-s',30,'Imbottita, chiusura a zip.'),
+      P('p-pd03','palline','Palline PD·03 (tubo da 3)','TMP-PD03','PRO','Giallo · tubo Acciaio','Tubo 3 pz','f-accessori',2.4,120,60,0,0.15,['c-tampo'],7.9,'s-it-s',120,'Pressurizzate, tubo brandizzato.'),
+      P('p-pd04','borsone-padel','Borsa padel PD·04','TMP-PD04-L','PRO','Lama · Forgia','2 racchette + termico','f-padel',16,50,150,2.7,1.2,['c-logo-ricamo'],69,'s-it-m',12,'Scomparto termico per racchette, tasca scarpe.'),
+      P('p-pd05','maglia-padel','Maglia padel PD·05','TMP-PD05-AF','PRO','Acciaio · Forgia','XS · S · M · L · XL · XXL','f-tessile',6.4,100,140,0,0.4,['c-logo-term','c-etichetta'],39.9,'s-it-s',50,'Ventilazione mirata su schiena e ascelle.'),
+      P('p-pd06','pantaloncini-padel','Pantaloncini padel PD·06','TMP-PD06-A','PRO','Acciaio','XS · S · M · L · XL · XXL','f-tessile',5.9,100,90,0,0.35,['c-logo-term'],34.9,'s-it-s',40,'Tasche portapalline.'),
+      P('p-pd09','cappellino','Cappellino PD·09','TMP-PD09-L','BASE','Lama · Forgia','Regolabile','f-accessori',2.8,100,40,0,0.2,['c-logo-ricamo'],19.9,'s-it-s',40,'Visiera curva, chiusura regolabile.'),
+      P('p-pd10','polsini','Polsini PD·10 (coppia)','TMP-PD10-L','BASE','Lama · Forgia','Unica','f-accessori',0.9,200,30,0,0.1,['c-logo-ricamo'],9.9,'s-it-s',80,'Spugna di cotone.'),
+      P('p-pd11','asciugamano','Asciugamano PD·11','TMP-PD11-L','BASE','Lama · Forgia','40 × 90 cm','f-accessori',3.2,100,50,0,0.3,['c-logo-ricamo'],19.9,'s-it-s',40,'Microfibra ad asciugatura rapida.'),
+      P('p-pd12','grip','Overgrip PD·12 (conf. 3)','TMP-PD12','BASE','Lama','3 pz','f-accessori',1.1,200,30,0,0.1,[],8.9,'s-it-s',100,'Perforato, spessore 0,6 mm.')
+    ],
+    purchases:[
+      {id:'a-0001',number:'ACQ-0001',supplier:'f-padel',date:'2026-09-20',status:'Da ordinare',freightId:'fr-mare',expected:'',extraCost:0,deposit:0,notes:'Riassortimento borse e cover per la stagione invernale.',
+        items:[{pid:'p-pd04',qty:50,cost:16,currency:'EUR'},{pid:'p-pd02',qty:100,cost:4.5,currency:'EUR'}],sample:true},
+      {id:'a-0002',number:'ACQ-0002',supplier:'f-tessile',date:'2026-09-05',status:'In viaggio',freightId:'',expected:'2026-10-08',extraCost:40,deposit:400,notes:'Kit gara: 100 maglie e 100 pantaloncini.',
+        items:[{pid:'p-fc01',qty:100,cost:7.2,currency:'EUR'},{pid:'p-fc02',qty:100,cost:5.1,currency:'EUR'}],sample:true}
+    ],
+    orders:[
+      {id:'o-0001',number:'TMP-0001',date:'2026-09-10',customer:'Squadra esempio · Juniores',channel:'Squadra',status:'Confermato',shipId:'s-it-l',parcels:1,shipCharged:0,discountPct:0,notes:'Kit gara per 18 giocatori, consegna prima dell\'inizio del campionato.',
+        items:[{pid:'p-fc01',qty:18,price:36,customs:['c-nome','c-numero','c-logo-squadra']},{pid:'p-fc02',qty:18,price:24,customs:['c-numero-short']},{pid:'p-fc03',qty:18,price:13,customs:[]}],sample:true},
+      {id:'o-0002',number:'TMP-0002',date:'2026-09-18',customer:'Cliente esempio · sito',channel:'Sito web',status:'Spedito',shipId:'s-it-m',parcels:1,shipCharged:0,discountPct:0,notes:'Spedizione gratuita (sopra soglia).',
+        items:[{pid:'p-pd04',qty:1,price:69,customs:['c-nome-borsa']},{pid:'p-pd03',qty:2,price:7.9,customs:[]}],sample:true},
+      {id:'o-0003',number:'TMP-0003',date:'2026-09-24',customer:'Circolo padel esempio',channel:'Circolo / club',status:'Preventivo',shipId:'s-ritiro',parcels:1,shipCharged:0,discountPct:5,notes:'Divise maestri e staff con logo del circolo.',
+        items:[{pid:'p-pd05',qty:12,price:32,customs:['c-logo-squadra']},{pid:'p-pd09',qty:12,price:15,customs:['c-logo-squadra']}],sample:true}
+    ]
+  };
+  const byKg = SAMPLE_KG;
+  data.products.forEach(p => { p.currency = 'EUR'; p.weightKg = byKg[p.id] || 0; p.freightId = p.supplier === 'f-padel' ? '' : 'manual'; if(p.supplier === 'f-padel') p.lotShip = 0; });
+  return data;
+}
+
+/* ---------- Stato ---------- */
+const S = {settings:{...DEF_SETTINGS}, products:[], customs:[], suppliers:[], shipping:[], freight:[], orders:[], purchases:[]};
+let mode = 'local';     // 'cloud' | 'local'
+let db = null;
+let readOnly = false;
+let loaded = false;
+let settingsExists = false;
+let view = 'dashboard';
+const ui = {line:'all', q:'', orderStatus:'all', pStatus:'open', onlyMine:false};
+try { ui.onlyMine = localStorage.getItem('tempra-only-mine') === '1'; } catch(e) {}
+
+/* ---------- Utility ---------- */
+const $ = (s, r=document) => r.querySelector(s);
+const h = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmtEur = new Intl.NumberFormat('it-IT',{style:'currency',currency:'EUR'});
+const eur = x => Number.isFinite(x) ? fmtEur.format(x) : '—';
+const pct = x => Number.isFinite(x) ? (x*100).toFixed(1).replace('.',',') + '%' : '—';
+const dec = (x,d=2) => Number.isFinite(x) ? x.toFixed(d).replace('.',',') : '';
+const n = v => { const x = parseFloat(String(v ?? '').replace(',','.')); return Number.isFinite(x) ? x : 0; };
+const uid = p => p + '-' + Date.now().toString(36) + Math.random().toString(36).slice(2,7);
+const clone = o => JSON.parse(JSON.stringify(o));
+const byId = (col, id) => (S[col] || []).find(x => x.id === id);
+const fmtKg = (kg, unit) => unit === 'g' ? Math.round(n(kg) * 1000) + ' g' : dec(n(kg)) + ' kg';
+const productFreight = p => p.freightId === 'manual' ? null : (byId('freight', p.freightId) || byId('freight', S.settings.defaultFreight) || S.freight[0] || null);
+const freightPerPiece = (fr, kg, lot) => n(kg) * n(fr.usdPerKg) * (n(S.settings.usdEur) || 1) + n(fr.fixedEur) / Math.max(1, n(lot) || 1);
+const allCats = () => BASE_CATS.concat(S.settings.extraCats || []);
+const catOf = id => allCats().find(c => c.id === id) || {id, code:'—', name:'Senza categoria', line:'calcio'};
+const psych = x => Number.isFinite(x) && x > 0 ? Math.ceil(x + 0.1) - 0.1 : NaN;
+const fmtDate = d => { if(!d) return '—'; const [y,m,g] = d.split('-'); return `${g}/${m}/${y}`; };
+const today = () => new Date().toISOString().slice(0,10);
+
+function toast(msg){
+  const t = $('#toast'); t.textContent = msg; t.hidden = false;
+  clearTimeout(toast._t); toast._t = setTimeout(() => { t.hidden = true; }, 2600);
+}
+
+/* ---------- Calcoli ---------- */
+function unitCost(p){
+  const lot = Math.max(1, n(p.lotQty) || 1);
+  const fx = n(S.settings.usdEur) || 1;
+  const purchase = n(p.cost) * (p.currency === 'USD' ? fx : 1);
+  const fr = productFreight(p);
+  const freight = fr ? n(p.weightKg) * n(fr.usdPerKg) * fx + n(fr.fixedEur) / lot : n(p.lotShip) / lot;
+  const duties = fr && fr.terms === 'DDP' ? 0 : purchase * n(p.duties) / 100;
+  const pack = n(p.packaging);
+  let cust = 0, setup = 0;
+  (p.baseCustoms || []).forEach(id => { const c = byId('customs', id); if(c){ cust += n(c.cost); setup += n(c.setup) / lot; } });
+  const total = purchase + freight + duties + pack + cust + setup;
+  return {purchase, freight, duties, pack, cust: cust + setup, total, lot, fr, fx};
+}
+function priceCalc(p, price = n(p.price)){
+  const st = S.settings, v = n(st.iva)/100, f = n(st.feePct)/100, F = n(st.feeFixed);
+  const uc = unitCost(p);
+  const net = price / (1 + v);
+  const vat = price - net;
+  const fees = price > 0 ? price * f + F : 0;
+  const profit = net - uc.total - fees;
+  const margin = net > 0 ? profit / net : NaN;
+  const markup = uc.total > 0 ? net / uc.total : NaN;
+  const m = n(st.targetMargin)/100;
+  const denom = (1 - m) / (1 + v) - f;
+  const suggested = denom > 0 ? psych((uc.total + F) / denom) : NaN;
+  const ship = byId('shipping', p.shipId);
+  const shipCost = ship ? n(ship.cost) : 0;
+  const shipNet = ship ? n(ship.price) / (1 + v) : 0;
+  return {uc, price, net, vat, fees, profit, margin, markup, suggested, ship, shipCost,
+    profitFreeShip: profit - shipCost, profitPaidShip: profit + shipNet - shipCost};
+}
+function status(c){
+  if(!Number.isFinite(c.margin) || c.price <= 0) return {cls:'neutral', label:'Senza prezzo'};
+  if(c.profit < 0) return {cls:'bad', label:'▼ In perdita'};
+  if(c.margin < n(S.settings.targetMargin)/100) return {cls:'warn', label:'▲ Sotto target'};
+  return {cls:'ok', label:'● In target'};
+}
+function arrivedQty(pid, st){
+  let q = 0;
+  S.purchases.forEach(a => { if(st ? st.includes(a.status) : a.status === 'Arrivato') (a.items||[]).forEach(it => { if(it.pid === pid) q += n(it.qty); }); });
+  return q;
+}
+const incomingQty = pid => arrivedQty(pid, INCOMING);
+const loadedQty = p => n(p.stock) + arrivedQty(p.id);
+const avail = p => loadedQty(p) - soldQty(p.id);
+const availHtml = (av, low) => av < 0 ? `<span class="low">0 pz</span><small style="display:block;color:var(--bad);font-size:11px">mancano ${-av}</small>` : `<span class="${low ? 'low' : ''}">${av} pz</span>`;
+const lineSupplier = it => (byId('products', it.pid) || {}).supplier || '';
+function purchaseSuppliers(a){ return [...new Set((a.items || []).map(lineSupplier).filter(Boolean))]; }
+function purchaseCalc(a){
+  const fx = n(S.settings.usdEur) || 1;
+  const fr = a.freightId ? byId('freight', a.freightId) : null;
+  let goods = 0, weight = 0, freight = 0, pieces = 0, missingKg = 0;
+  const bySup = {};
+  (a.items || []).forEach(it => {
+    const p = byId('products', it.pid); const qty = n(it.qty);
+    const val = qty * n(it.cost) * (it.currency === 'USD' ? fx : 1);
+    goods += val; pieces += qty;
+    const sk = lineSupplier(it); bySup[sk] = bySup[sk] || {goods:0, pieces:0}; bySup[sk].goods += val; bySup[sk].pieces += qty;
+    if(p){ weight += qty * n(p.weightKg); if(!n(p.weightKg)) missingKg += qty;
+      const pf = fr || productFreight(p);
+      if(pf) freight += qty * n(p.weightKg) * n(pf.usdPerKg) * fx;
+      else freight += qty * n(p.lotShip) / Math.max(1, n(p.lotQty) || 1); }
+  });
+  const trf = fr || (a.items && a.items[0] && byId('products', a.items[0].pid) ? productFreight(byId('products', a.items[0].pid)) : null);
+  if(trf && n(trf.fixedEur)) freight += n(trf.fixedEur);
+  let design = 0; const designs = [];
+  if(a.isSample && a.status !== 'Annullato') new Set((a.items || []).map(it => it.pid)).forEach(pid => { const p = byId('products', pid);
+    if(p && n(p.designCost) > 0 && designOwner(pid, a) === a.id){ design += n(p.designCost); designs.push(p.name); } });
+  const total = goods + freight + n(a.extraCost) + design;
+  return {design, designs, goods, weight, freight, pieces, missingKg, total, due: total - n(a.deposit), tr: trf, bySup};
+}
+function soldQty(pid){
+  let q = 0;
+  const p = byId('products', pid);
+  S.orders.forEach(o => {
+    if(!SOLD.includes(o.status)) return;
+    if(o.sample && p && !p.sample) return; // gli ordini d'esempio non toccano il magazzino dei tuoi prodotti
+    (o.items||[]).forEach(it => { if(it.pid === pid) q += n(it.qty); });
+  });
+  return q;
+}
+function orderCalc(o){
+  const st = S.settings, v = n(st.iva)/100, f = n(st.feePct)/100, F = n(st.feeFixed);
+  let goods = 0, custGross = 0, goodsCost = 0, custCost = 0, pieces = 0, weight = 0, importFreight = 0, missingKg = 0, design = 0;
+  const designs = [];
+
+  const ofr = o.freightId ? byId('freight', o.freightId) : null;
+  const lines = (o.items || []).map(it => {
+    const p = byId('products', it.pid);
+    const qty = n(it.qty), unit = n(it.price);
+    let cg = 0, cc = 0, setup = 0;
+    (it.customs || []).forEach(cid => { const c = byId('customs', cid); if(c){ cg += n(c.price); cc += n(c.cost); setup += n(c.setup); } });
+    let lc = 0;
+    if(p){
+      const uc = unitCost(p);
+      lc = uc.total;
+      if(ofr && uc.fr){ const alt = freightPerPiece(ofr, p.weightKg, uc.lot); lc += alt - uc.freight; importFreight += qty * alt; }
+      else if(uc.fr) importFreight += qty * uc.freight;
+      weight += qty * n(p.weightKg);
+      if(!n(p.weightKg)) missingKg += qty;
+    }
+    const gross = qty * (unit + cg);
+    const cost = qty * lc + qty * cc + setup;
+    goods += qty * unit; custGross += qty * cg; goodsCost += qty * lc; custCost += qty * cc + setup; pieces += qty;
+    return {gross, cost, qty, unitFull: unit + cg};
+  });
+  const sub = goods + custGross;
+  const discount = sub * n(o.discountPct) / 100;
+  const auto = o.shipAuto !== false;
+  let rate, parcels, shipCharged, zone = o.zone || (byId('shipping', o.shipId) || {}).zone || 'Italia';
+  if(auto){
+    const pick = autoShip(zone, weight);
+    rate = pick.rate; parcels = pick.parcels;
+    const free = n(st.freeShipOver) > 0 && (sub - discount) >= n(st.freeShipOver);
+    shipCharged = rate && !free ? n(rate.price) * parcels : 0;
+  } else {
+    rate = byId('shipping', o.shipId); parcels = Math.max(1, n(o.parcels) || 1); shipCharged = n(o.shipCharged);
+  }
+  const shipCost = rate ? n(rate.cost) * parcels : 0;
+  const total = sub - discount + shipCharged;
+  const net = total / (1 + v);
+  const vat = total - net;
+  const fees = total > 0 ? total * f + F : 0;
+  const costs = goodsCost + custCost + shipCost + fees + design;
+  const profit = net - goodsCost - custCost - shipCost - design;
+  const profitAfterFees = profit - fees;
+  return {lines, goods, custGross, sub, discount, shipCharged, shipCost, total, net, vat, fees, goodsCost, custCost, costs,
+    profit: profitAfterFees, margin: net > 0 ? profitAfterFees / net : NaN, pieces,
+    weight, importFreight, missingKg, design, designs, rate, parcels, zone, auto, importRate: ofr};
+}
+/* Il design di un modello si paga una volta, nel primo ordine campione al fornitore
+   (per data) che contiene quel modello; gli annullati non contano. */
+function designOwner(pid, draft){
+  const list = S.purchases.filter(a => !draft || a.id !== draft.id).concat(draft ? [draft] : [])
+    .filter(a => a.isSample && a.status !== 'Annullato' && (a.items || []).some(it => it.pid === pid && n(it.qty) > 0));
+  const pool = list;
+  pool.sort((a,b) => (a.date||'').localeCompare(b.date||'') || (a.number||'').localeCompare(b.number||''));
+  return pool[0] ? pool[0].id : null;
+}
+const fmtStamp = iso => { const d = new Date(iso); return isNaN(d) ? '—' : d.toLocaleString('it-IT', {day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'}); };
+const FX_SOURCES = [
+  ['https://api.coinbase.com/v2/exchange-rates?currency=USD', j => j && j.data && j.data.rates && parseFloat(j.data.rates.EUR), 'Coinbase (tempo reale)'],
+  ['https://api.frankfurter.app/latest?from=USD&to=EUR', j => j && j.rates && j.rates.EUR, 'BCE via Frankfurter'],
+  ['https://open.er-api.com/v6/latest/USD', j => j && j.rates && j.rates.EUR, 'ExchangeRate-API']
+];
+async function refreshFx(manual){
+  if(readOnly) return false;
+  for(const [url, pick, src] of FX_SOURCES){
+    try {
+      const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), 8000);
+      const r = await fetch(url, {signal: ctl.signal, cache: 'no-store'}); clearTimeout(t);
+      if(!r.ok) continue;
+      const v = pick(await r.json());
+      if(!(v > 0.5 && v < 1.5)) continue;
+      S.settings.usdEur = Math.round(v * 10000) / 10000; S.settings.usdEurAt = new Date().toISOString(); S.settings.usdEurSrc = src;
+      await saveSettings(); render();
+      if(manual) toast(`Cambio aggiornato: 1 $ = ${dec(S.settings.usdEur, 4)} €`);
+      return true;
+    } catch(e) {}
+  }
+  if(manual) toast('Non riesco a collegarmi al sito del cambio da qui: resta il valore attuale.');
+  return false;
+}
+function fxDue(){ const at = Date.parse(S.settings.usdEurAt || ''); return !(at > 0) || Date.now() - at >= 3600e3; }
+function startFxTimer(){
+  if(mode !== 'local') return;
+  const tick = () => { if(fxDue()) refreshFx(false); };
+  tick(); setInterval(tick, 10 * 60e3);
+}
+function autoShip(zone, kg){
+  const list = S.shipping.filter(r => (r.zone || 'Italia') === zone).sort((a,b) => (n(a.maxKg) || 1e9) - (n(b.maxKg) || 1e9));
+  if(!list.length) return {rate:null, parcels:1};
+  const fit = list.find(r => !n(r.maxKg) || n(r.maxKg) >= kg);
+  if(fit) return {rate:fit, parcels:1};
+  const big = list[list.length - 1];
+  return {rate:big, parcels:Math.max(1, Math.ceil(kg / n(big.maxKg)))};
+}
+
+/* ---------- Persistenza ---------- */
+function setChip(kind, text){
+  const c = $('#store-chip'); c.className = 'store-chip ' + kind; c.querySelector('span').textContent = text; c.title = text;
+}
+function persistLocal(){
+  if(mode !== 'local') return;
+  try { localStorage.setItem(LS_KEY, JSON.stringify(S)); } catch(e) { setChip('err','Salvataggio locale non disponibile'); }
+}
+function loadLocal(){
+  let data = null;
+  try { const raw = localStorage.getItem(LS_KEY); if(raw) data = JSON.parse(raw); } catch(e) {}
+  if(!data) data = sampleData();
+  S.settings = {...DEF_SETTINGS, ...(data.settings || {})};
+  COLS.forEach(c => { S[c] = Array.isArray(data[c]) ? data[c] : []; });
+  settingsExists = true;
+}
+const chains = new Map();
+function queued(path, fn){
+  const prev = chains.get(path) || Promise.resolve();
+  const next = prev.catch(() => {}).then(fn);
+  chains.set(path, next);
+  return next;
+}
+function writeFailed(e){
+  const code = e && e.code;
+  if(code === 'invalid_argument'){ readOnly = true; toast('Non hai i permessi per modificare questi dati.'); render(); }
+  else if(code === 'quota_exceeded'){ toast('Spazio dati esaurito: elimina modelli o ordini vecchi.'); }
+  else toast('Salvataggio non riuscito. Controlla la connessione e riprova.');
+}
+function upsertLocal(col, obj){
+  const i = S[col].findIndex(x => x.id === obj.id);
+  if(i >= 0) S[col][i] = obj; else S[col].push(obj);
+}
+async function saveDoc(col, obj){
+  const doc = clone(obj);
+  upsertLocal(col, doc); render();
+  if(mode === 'cloud'){
+    try { await queued(col + '/' + doc.id, () => db.collection(col).doc(doc.id).set(doc)); return true; }
+    catch(e){ writeFailed(e); return false; }
+  }
+  persistLocal(); return true;
+}
+async function deleteDoc(col, id){
+  S[col] = S[col].filter(x => x.id !== id); render();
+  if(mode === 'cloud'){
+    try { await queued(col + '/' + id, () => db.collection(col).doc(id).delete()); }
+    catch(e){ writeFailed(e); }
+  } else persistLocal();
+}
+async function saveSettings(){
+  const doc = clone(S.settings);
+  if(mode === 'cloud'){
+    settingsExists = true;
+    try { await queued('config/settings', () => db.doc('config/settings').set(doc)); }
+    catch(e){ writeFailed(e); }
+  } else persistLocal();
+}
+async function writeAll(data){
+  S.settings = {...DEF_SETTINGS, ...(data.settings || {})};
+  await saveSettings();
+  for(const c of COLS){
+    for(const d of (data[c] || [])){
+      if(!d || typeof d.id !== 'string' || !/^[A-Za-z0-9_.~:@+-]{1,120}$/.test(d.id)) continue;
+      upsertLocal(c, d);
+      if(mode === 'cloud'){
+        try { await queued(c + '/' + d.id, () => db.collection(c).doc(d.id).set(d)); } catch(e){ writeFailed(e); return false; }
+      }
+    }
+  }
+  persistLocal(); render(); return true;
+}
+
+async function restoreSample(){
+  const data = sampleData(); let added = 0;
+  if(!settingsExists){ S.settings = {...data.settings, ...S.settings}; await saveSettings(); }
+  for(const c of COLS){
+    for(const d of (data[c] || [])){
+      if(S[c].some(x => x.id === d.id)) continue;
+      upsertLocal(c, d); added++;
+      if(mode === 'cloud'){ try { await queued(c + '/' + d.id, () => db.collection(c).doc(d.id).set(d)); } catch(e){ writeFailed(e); return; } }
+    }
+  }
+  persistLocal(); render(); toast(added ? `${added} elementi di esempio ripristinati` : 'I dati di esempio sono già tutti presenti');
+}
+async function boot(){
+  try { const v = localStorage.getItem('tempra-view'); if(v) view = v; } catch(e) {}
+  const hash = location.hash.replace('#','');
+  if(['dashboard','catalogo','personalizzazioni','ordini','acquisti','fornitori','spedizioni','impostazioni'].includes(hash)) view = hash;
+  renderTabs();
+  if(window.claude && typeof window.claude.use === 'function'){
+    try { db = await window.claude.use('db'); } catch(e){ db = null; }
+  }
+  if(db){
+    mode = 'cloud'; setChip('', 'Collegamento…');
+    const pending = new Set(COLS.concat('settings'));
+    const ready = key => { if(pending.delete(key) && pending.size === 0){ loaded = true; setChip('cloud','Salvato nel cloud'); } if(!pending.size) render(); };
+    const onErr = e => { setChip('err', 'Connessione dati persa'); if(e && e.code !== 'revoked') toast('Aggiornamento dati interrotto: ricarica la pagina.'); };
+    COLS.forEach(c => {
+      db.collection(c).onSnapshot(snap => {
+        S[c] = snap.docs.map(d => ({...clone(d.data()), id: d.id}));
+        ready(c);
+      }, onErr);
+    });
+    db.doc('config/settings').onSnapshot(snap => {
+      settingsExists = snap.exists;
+      S.settings = {...DEF_SETTINGS, ...(snap.exists ? clone(snap.data()) : {})};
+      const typing = document.activeElement && document.activeElement.dataset && document.activeElement.dataset.set;
+      if(typing && loaded){ return; }
+      ready('settings');
+    }, onErr);
+  } else {
+    mode = 'local'; loadLocal(); loaded = true; startFxTimer();
+    setChip('', 'Salvato su questo dispositivo');
+    render();
+  }
+}
+
+/* ---------- Navigazione ---------- */
+const VIEWS = [['dashboard','Dashboard'],['catalogo','Catalogo'],['personalizzazioni','Personalizzazioni'],['ordini','Ordini e preventivi'],['acquisti','Acquisti'],['fornitori','Fornitori'],['spedizioni','Spedizioni'],['impostazioni','Impostazioni']];
+const ICONS = {
+  dashboard:'<path d="M4 13h6V4H4zM14 20h6v-9h-6zM4 20h6v-4H4zM14 7h6V4h-6z"/>',
+  catalogo:'<path d="M8 3 4 6l2 4 2-1v12h8V9l2 1 2-4-4-3h-2.5a2.5 2.5 0 0 1-5 0z"/>',
+  ordini:'<path d="M9 4h6v3H9z"/><path d="M15 5h3v16H6V5h3"/><path d="M9 12h6M9 16h4"/>',
+  personalizzazioni:'<path d="M5 19 16.5 7.5l-2-2L3 17v2z"/><path d="m14.5 5.5 2-2 4 4-2 2"/>',
+  acquisti:'<path d="M3 7h11v9H3zM14 10h4l3 3v3h-7"/><circle cx="7" cy="17.5" r="1.7"/><circle cx="17" cy="17.5" r="1.7"/>',
+  altro:'<circle cx="5" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="19" cy="12" r="1.3"/>'
+};
+const BNAV = [['dashboard','Home'],['catalogo','Catalogo'],['ordini','Ordini'],['acquisti','Acquisti'],['altro','Altro']];
+const MORE = [['personalizzazioni','Personalizzazioni'],['spedizioni','Spedizioni e import'],['fornitori','Fornitori'],['impostazioni','Impostazioni']];
+function renderTabs(){
+  $('#tabs').innerHTML = VIEWS.map(([k,l]) => `<button class="tab" data-view="${k}" ${k===view?'aria-current="page"':''}>${l}</button>`).join('');
+  const inMore = MORE.some(([k]) => k === view);
+  $('#bnav').innerHTML = BNAV.map(([k,l]) => `<button ${k === 'altro' ? 'data-more aria-haspopup="true"' : `data-view="${k}"`} ${(k === view || (k === 'altro' && inMore)) ? 'aria-current="page"' : ''}><svg viewBox="0 0 24 24" aria-hidden="true">${ICONS[k]}</svg><span>${l}</span></button>`).join('');
+  $('#more-menu').innerHTML = MORE.map(([k,l]) => `<button data-view="${k}" ${k===view?'aria-current="page"':''}>${l}</button>`).join('');
+}
+function goView(v){
+  view = v; $('#more-menu').hidden = true;
+  try { localStorage.setItem('tempra-view', view); } catch(err) {}
+  renderTabs(); render(); window.scrollTo({top:0});
+}
+['#tabs','#bnav','#more-menu'].forEach(sel => $(sel).addEventListener('click', e => {
+  if(e.target.closest('[data-more]')){ $('#more-menu').hidden = !$('#more-menu').hidden; return; }
+  const b = e.target.closest('[data-view]'); if(b) goView(b.dataset.view);
+}));
+document.addEventListener('pointerdown', e => { if(!e.target.closest('#more-menu,#bnav')) $('#more-menu').hidden = true; });
+
+function render(){
+  if(!loaded){ return; }
+  const main = $('#main');
+  const fn = {dashboard:vDashboard, catalogo:vCatalog, personalizzazioni:vCustoms, ordini:vOrders, acquisti:vPurchases, fornitori:vSuppliers, spedizioni:vShipping, impostazioni:vSettings}[view] || vDashboard;
+  const a = document.activeElement;
+  const fid = a && main.contains(a) && a.id ? a.id : null;
+  let sel = null; try { sel = [a.selectionStart, a.selectionEnd]; } catch(e) {}
+  main.innerHTML = fn();
+  if(fid){ const el = document.getElementById(fid); if(el){ el.focus(); try { if(sel && sel[0] != null) el.setSelectionRange(sel[0], sel[1]); } catch(e) {} } }
+}
+
+const tag = x => x && x.sample ? '<span class="tag ex" title="Dato di esempio: non l\'hai inserito tu">Esempio</span>' : '<span class="tag mine" title="Inserito o confermato da te">✓ Tuo</span>';
+const vis = list => ui.onlyMine ? list.filter(x => !x.sample) : list;
+const sc = x => x && x.sample ? 'is-sample' : '';
+function sampleBanner(){
+  const ex = COLS.reduce((t,c) => t + S[c].filter(x => x.sample).length, 0);
+  const mineN = COLS.reduce((t,c) => t + S[c].filter(x => !x.sample).length, 0);
+  if(!ex) return '';
+  return `<div class="banner sample"><p><span class="tag mine" style="margin:0">✓ Tuo</span> = inserito o salvato da te (${mineN}) · <span class="tag ex" style="margin:0">Esempio</span> = dato di prova (${ex}). Quando modifichi e salvi un esempio diventa tuo.</p>
+  <div class="seg" role="group" aria-label="Cosa mostrare"><button data-act="show-all" aria-pressed="${!ui.onlyMine}">Tutti</button><button data-act="show-mine" aria-pressed="${!!ui.onlyMine}">Solo i miei</button></div>
+  <button class="btn sm" data-act="clear-sample" ${readOnly?'disabled':''}>Elimina esempi</button></div>`;
+}
+function emptyCloud(){
+  if(mode !== 'cloud' || settingsExists || COLS.some(c => S[c].length)) return '';
+  return `<div class="banner sample"><p><strong>Il gestionale è vuoto.</strong> Puoi partire dal catalogo TEMPRA di esempio (17 categorie calcio e padel con prezzi indicativi) oppure inserire tutto da zero.</p>
+  <button class="btn forgia sm" data-act="load-sample">Carica catalogo di esempio</button><button class="btn sm" data-act="start-empty">Parti da zero</button></div>`;
+}
+
+/* ---------- Viste ---------- */
+function vDashboard(){
+  const conf = S.orders.filter(o => SOLD.includes(o.status));
+  let rev = 0, prof = 0, net = 0;
+  conf.forEach(o => { const c = orderCalc(o); rev += c.total; prof += c.profit; net += c.net; });
+  const quotes = S.orders.filter(o => o.status === 'Preventivo');
+  const qVal = quotes.reduce((a,o) => a + orderCalc(o).total, 0);
+  let stockVal = 0, stockPcs = 0;
+  S.products.forEach(p => { const av = Math.max(0, avail(p)); stockVal += av * unitCost(p).total; stockPcs += av; });
+  const rows = vis(S.products).map(p => ({p, c: priceCalc(p)})).filter(r => r.c.price > 0);
+  const avgMargin = rows.length ? rows.reduce((a,r) => a + (Number.isFinite(r.c.margin) ? r.c.margin : 0), 0) / rows.length : NaN;
+  rows.sort((a,b) => a.c.margin - b.c.margin);
+  const target = n(S.settings.targetMargin)/100;
+  const maxM = Math.max(0.8, ...rows.map(r => r.c.margin || 0));
+  const meters = rows.map(r => {
+    const s = status(r.c); const w = Math.max(0, Math.min(1, r.c.margin / maxM)) * 100;
+    return `<div class="meter" data-open-product="${h(r.p.id)}" title="${h(r.p.name)}: utile ${eur(r.c.profit)} su ${eur(r.c.price)}">
+      <div class="m-name"><small>${h(catOf(r.p.cat).code)}</small>${h(r.p.name)}${r.p.sample ? '<span class="tag ex">Es.</span>' : ''}</div>
+      <div class="track"><div class="fill" style="width:${w}%"></div><div class="tick" style="left:${(target/maxM*100).toFixed(2)}%"></div></div>
+      <div class="m-val num">${pct(r.c.margin)}</div><span class="pill ${s.cls}">${s.label}</span></div>`;
+  }).join('') || '<p class="muted">Nessun modello con prezzo di vendita.</p>';
+  const reorder = S.products.map(p => ({p, av: avail(p), inc: incomingQty(p.id)})).filter(r => r.av + r.inc <= n(r.p.reorder ?? 5)).sort((a,b) => a.av - b.av);
+  const recent = S.orders.slice().sort((a,b) => (b.date||'').localeCompare(a.date||'')).slice(0,6);
+  const emptyCats = allCats().filter(c => !S.products.some(p => p.cat === c.id));
+  return `${emptyCloud()}${sampleBanner()}
+  <div class="view-head"><div><p class="eyebrow">Temprati per competere</p><h1>Dashboard</h1><p class="lead">Quanto incassi, quanto ti resta e quali prodotti vanno sistemati. Prezzi IVA ${n(S.settings.iva)}% inclusa, margine target ${n(S.settings.targetMargin)}%.</p></div>
+  <div class="actions"><button class="btn primary" data-act="new-order">Nuovo preventivo</button><button class="btn" data-act="new-product">Nuovo modello</button></div></div>
+  <div class="kpis">
+    <div class="kpi dark"><span class="kpi-label">Fatturato ordini</span><span class="kpi-value">${eur(rev)}</span><span class="kpi-sub">${conf.length} ordini confermati · IVA incl.</span></div>
+    <div class="kpi"><span class="kpi-label">Utile netto ordini</span><span class="kpi-value">${eur(prof)}</span><span class="kpi-sub">Margine ${pct(net ? prof/net : NaN)} sull'imponibile</span></div>
+    <div class="kpi"><span class="kpi-label">Preventivi aperti</span><span class="kpi-value">${eur(qVal)}</span><span class="kpi-sub">${quotes.length} da confermare</span></div>
+    <div class="kpi"><span class="kpi-label">Magazzino a costo</span><span class="kpi-value">${eur(stockVal)}</span><span class="kpi-sub">${stockPcs} pezzi disponibili</span></div>
+    <div class="kpi"><span class="kpi-label">Margine medio catalogo</span><span class="kpi-value">${pct(avgMargin)}</span><span class="kpi-sub">${S.products.length} modelli in ${new Set(S.products.map(p=>p.cat)).size} categorie</span></div>
+  </div>
+  <div class="grid-2">
+    <section class="panel"><div class="panel-head"><h2>Margine per modello</h2><span class="legend-inline"><span><i style="background:var(--bar-cost)"></i>Margine</span><span><i style="background:var(--accent);width:3px"></i>Target ${n(S.settings.targetMargin)}%</span></span></div>
+      <div class="panel-body"><div class="meter-list">${meters}</div><p class="help">Ordinati dal più basso. Margine = utile ÷ prezzo senza IVA, dopo costi di acquisto, trasporto, dazi, packaging, personalizzazioni di serie e commissioni di pagamento.</p></div></section>
+    <div style="display:flex;flex-direction:column;gap:18px">
+      <section class="panel"><div class="panel-head"><h2>Da riordinare</h2><span class="muted" style="font-size:13px">disponibili ≤ soglia</span></div><div class="panel-body"><div class="list">
+        ${reorder.map(r => `<div class="li" data-open-product="${h(r.p.id)}"><div class="grow"><b>${h(r.p.name)}</b><small>${h(catOf(r.p.cat).code)} · soglia ${n(r.p.reorder ?? 5)} · lotto ${n(r.p.lotQty)||1} pz${r.inc ? ` · ${r.inc} in arrivo` : ''}</small></div><span class="num" style="text-align:right">${availHtml(r.av, r.av <= 0)}</span></div>`).join('') || '<p class="muted">Tutto in magazzino sopra soglia.</p>'}
+      </div></div></section>
+      <section class="panel"><div class="panel-head"><h2>Ultimi ordini</h2><button class="btn ghost sm" data-go="ordini">Tutti</button></div><div class="panel-body"><div class="list">
+        ${recent.map(o => { const c = orderCalc(o); return `<div class="li" data-open-order="${h(o.id)}"><div class="grow"><b>${h(o.customer||'Senza cliente')}</b><small class="mono">${h(o.number)} · ${fmtDate(o.date)} · ${c.pieces} pz</small></div><span class="st ${h((o.status||'').replace(/ /g,'-'))}">${h(o.status)}</span><span class="num">${eur(c.total)}</span></div>`; }).join('') || '<p class="muted">Ancora nessun ordine.</p>'}
+      </div></div></section>
+      ${emptyCats.length ? `<section class="panel"><div class="panel-head"><h2>Categorie senza modelli</h2></div><div class="panel-body"><div class="chips">${emptyCats.map(c => `<button class="chip" style="cursor:pointer;background:none" data-new-in="${h(c.id)}">${h(c.code)} ${h(c.name)} +</button>`).join('')}</div></div></section>` : ''}
+    </div>
+  </div>`;
+}
+
+function vCatalog(){
+  const q = ui.q.trim().toLowerCase();
+  const cats = allCats().filter(c => ui.line === 'all' || c.line === ui.line);
+  const blocks = cats.map(c => {
+    const prods = vis(S.products).filter(p => p.cat === c.id && (!q || [p.name,p.sku,p.colorway,p.specs].join(' ').toLowerCase().includes(q)));
+    if((q || ui.onlyMine) && !prods.length) return '';
+    const rows = prods.map(p => {
+      const pc = priceCalc(p), s = status(pc), av = avail(p);
+      return `<button class="row ${sc(p)}" data-open-product="${h(p.id)}">
+        <span class="r-name"><b>${h(p.name)}${tag(p)}</b><small>${h(p.sku||'—')} · ${n(p.weightKg) ? fmtKg(p.weightKg, p.weightUnit) : '<span style="color:var(--bad)">peso mancante</span>'}</small></span>
+        <span class="r-grade"><span class="grade ${h(p.grade||'BASE')}">${h(p.grade||'BASE')}</span></span>
+        <span class="r-num num"><small>Costo pieno</small>${eur(pc.uc.total)}</span>
+        <span class="r-num num"><small>Prezzo</small>${eur(pc.price)}</span>
+        <span class="r-num num"><small>Utile</small>${eur(pc.profit)}</span>
+        <span class="r-num"><small>Margine</small><span class="pill ${s.cls}">${pct(pc.margin)}</span></span>
+        <span class="r-num num"><small>Disponibili</small>${availHtml(av, av <= n(p.reorder ?? 5))}</span>
+      </button>`;
+    }).join('');
+    return `<section class="cat-block"><div class="cat-head"><span class="cat-code">${h(c.code)}</span><span class="cat-name">${h(c.name)}</span><span class="line-tag ${h(c.line)}">${h(LINES[c.line]||c.line)}</span><span class="count">${prods.length} ${prods.length===1?'modello':'modelli'}</span>
+      <button class="btn sm" data-new-in="${h(c.id)}" ${readOnly?'disabled':''}>+ Modello</button></div>
+      ${prods.length ? `<div class="row-labels"><span>Modello</span><span>Grado</span><span>Costo pieno</span><span>Prezzo</span><span>Utile/pz</span><span>Margine</span><span>Disp.</span></div><div class="rows">${rows}</div>` : `<div class="empty-row">Nessun modello. Aggiungine uno per calcolare costi e margini.</div>`}
+    </section>`;
+  }).join('');
+  return `${sampleBanner()}<div class="view-head"><div><p class="eyebrow">Linee FC · PD</p><h1>Catalogo</h1><p class="lead">Ogni modello con prezzo di acquisto, costi accessori, personalizzazioni di serie, prezzo di vendita e margine. Tocca una riga per modificarla.</p></div>
+  <div class="actions"><button class="btn" data-act="export-csv">Esporta CSV</button><button class="btn primary" data-act="new-product" ${readOnly?'disabled':''}>Nuovo modello</button></div></div>
+  <div class="filters"><div class="seg" role="group" aria-label="Linea">${[['all','Tutte'],['calcio','Calcio'],['padel','Padel']].map(([k,l]) => `<button data-line="${k}" aria-pressed="${ui.line===k}">${l}</button>`).join('')}</div>
+  <input class="search" id="cat-search" type="search" placeholder="Cerca modello, SKU, colorway…" value="${h(ui.q)}"></div>
+  ${blocks || '<p class="muted">Nessun modello trovato.</p>'}`;
+}
+
+function vCustoms(){
+  const v = n(S.settings.iva)/100;
+  const rows = vis(S.customs).slice().sort((a,b) => (a.method||'').localeCompare(b.method||'') || a.name.localeCompare(b.name)).map(c => {
+    const netP = n(c.price)/(1+v), m = netP - n(c.cost);
+    return `<tr class="${sc(c)}" data-open-custom="${h(c.id)}"><td class="t-main"><b>${h(c.name)}</b>${tag(c)}</td><td data-label="Tecnica">${h(c.method)}</td>
+      <td class="r num" data-label="Costo/pz">${eur(n(c.cost))}</td><td class="r num" data-label="Impianto">${n(c.setup) ? eur(n(c.setup)) : '—'}</td>
+      <td class="r num" data-label="Prezzo cliente">${n(c.price) ? eur(n(c.price)) : '<span class="muted">di serie</span>'}</td>
+      <td class="r num" data-label="Guadagno/pz">${n(c.price) ? eur(m) : '<span class="muted">—</span>'}</td>
+      <td class="t-wide"><div class="chips">${(c.cats && c.cats.length ? c.cats.map(id => `<span class="chip">${h(catOf(id).code)}</span>`).join('') : '<span class="chip">Tutte</span>')}</div></td></tr>`;
+  }).join('');
+  return `${sampleBanner()}<div class="view-head"><div><p class="eyebrow">Numeri, nomi, loghi di squadra</p><h1>Personalizzazioni</h1><p class="lead">Listino delle lavorazioni: costo per pezzo, costo d'impianto una tantum (cliché, punch ricamo, telaio) e prezzo al cliente. Quelle con prezzo 0 sono "di serie" e si sommano al costo del modello.</p></div>
+  <div class="actions"><button class="btn primary" data-act="new-custom" ${readOnly?'disabled':''}>Nuova personalizzazione</button></div></div>
+  <div class="tbl-wrap cardify"><table class="tbl"><thead><tr><th>Lavorazione</th><th>Tecnica</th><th class="r">Costo/pz</th><th class="r">Impianto</th><th class="r">Prezzo cliente</th><th class="r">Guadagno/pz</th><th>Categorie</th></tr></thead><tbody>${rows || '<tr><td colspan="7" class="muted">Nessuna personalizzazione.</td></tr>'}</tbody></table></div>
+  <p class="help">Prezzo cliente IVA inclusa. Guadagno/pz = prezzo senza IVA − costo per pezzo; l'impianto si paga una volta per riga d'ordine.</p>`;
+}
+
+function vOrders(){
+  const list = vis(S.orders).filter(o => ui.orderStatus === 'all' || o.status === ui.orderStatus).sort((a,b) => (b.date||'').localeCompare(a.date||'') || (b.number||'').localeCompare(a.number||''));
+  const rows = list.map(o => { const c = orderCalc(o);
+    return `<tr class="${sc(o)}" data-open-order="${h(o.id)}"><td class="mono" data-label="Numero">${h(o.number)}</td><td class="num" data-label="Data">${fmtDate(o.date)}</td><td class="t-main"><b>${h(o.customer||'—')}</b>${tag(o)}<div class="muted" style="font-size:12.5px">${h(o.channel||'')}</div></td>
+      <td class="r num" data-label="Pezzi">${c.pieces}</td><td class="r num" data-label="Totale">${eur(c.total)}</td><td class="r num" data-label="Utile">${eur(c.profit)}</td><td class="r" data-label="Margine"><span class="pill ${c.profit<0?'bad':(c.margin < n(S.settings.targetMargin)/100 ? 'warn':'ok')}">${pct(c.margin)}</span></td>
+      <td data-label="Stato"><span class="st ${h((o.status||'').replace(/ /g,'-'))}">${h(o.status)}</span></td></tr>`; }).join('');
+  return `${sampleBanner()}<div class="view-head"><div><p class="eyebrow">Squadre, circoli, sito</p><h1>Ordini e preventivi</h1><p class="lead">Componi un preventivo con modelli, quantità e personalizzazioni: vedi subito totale per il cliente, costi e utile. Cambia lo stato in "Confermato" quando diventa un ordine.</p></div>
+  <div class="actions"><button class="btn primary" data-act="new-order" ${readOnly?'disabled':''}>Nuovo preventivo</button></div></div>
+  <div class="filters"><div class="seg scroll" role="group" aria-label="Stato">${[['all','Tutti']].concat(STATUSES.map(s=>[s,s])).map(([k,l]) => `<button data-ostatus="${h(k)}" aria-pressed="${ui.orderStatus===k}">${h(l)}</button>`).join('')}</div></div>
+  <div class="tbl-wrap cardify"><table class="tbl"><thead><tr><th>N.</th><th>Data</th><th>Cliente</th><th class="r">Pezzi</th><th class="r">Totale</th><th class="r">Utile</th><th class="r">Margine</th><th>Stato</th></tr></thead><tbody>${rows || '<tr><td colspan="8" class="muted">Nessun ordine in questo stato.</td></tr>'}</tbody></table></div>`;
+}
+
+function vPurchases(){
+  const open = S.purchases.filter(a => !['Arrivato','Annullato'].includes(a.status));
+  const sumBy = list => list.reduce((t,a) => t + purchaseCalc(a).total, 0);
+  const todo = S.purchases.filter(a => a.status === 'Da ordinare'), incoming = S.purchases.filter(a => INCOMING.includes(a.status));
+  const due = open.filter(a => a.status !== 'Da ordinare').reduce((t,a) => t + purchaseCalc(a).due, 0);
+  const list = vis(S.purchases).filter(a => ui.pStatus === 'all' || (ui.pStatus === 'open' ? !['Arrivato','Annullato'].includes(a.status) : a.status === ui.pStatus))
+    .sort((a,b) => PSTATUS.indexOf(a.status) - PSTATUS.indexOf(b.status) || (b.date||'').localeCompare(a.date||''));
+  const rows = list.map(a => { const c = purchaseCalc(a), f = byId('suppliers', a.supplier);
+    return `<tr class="${sc(a)}" data-open-purchase="${h(a.id)}"><td class="mono" data-label="Numero" style="white-space:nowrap">${h(a.number)}</td><td class="num" data-label="Data">${fmtDate(a.date)}</td>
+      <td class="t-main"><b>${h(a.supplier ? (f ? f.name : 'Fornitore non indicato') : 'Più fornitori: ' + purchaseSuppliers(a).map(id => (byId('suppliers', id) || {name:'?'}).name).join(', '))}</b>${tag(a)}<div class="muted" style="font-size:12.5px">${(a.items||[]).map(it => h((byId('products', it.pid)||{name:'?'}).name) + ' ×' + n(it.qty)).join(' · ')}</div></td>
+      <td class="r num" data-label="Pezzi">${c.pieces}</td><td class="r num" data-label="Peso">${dec(c.weight,1)} kg</td><td class="r num" data-label="Totale">${eur(c.total)}</td><td class="r num" data-label="Da pagare">${eur(c.due)}</td>
+      <td data-label="Arrivo" class="num">${a.status === 'Arrivato' ? 'arrivato' : (a.expected ? fmtDate(a.expected) : h((c.tr && c.tr.transitDays) || '—'))}</td>
+      <td data-label="Stato"><span class="st p-${h(a.status.replace(/ /g,'-'))}">${h(a.status)}</span>${a.isSample ? ' <span class="st">Campione</span>' : ''}</td></tr>`; }).join('');
+  return `${sampleBanner()}<div class="view-head"><div><p class="eyebrow">Ordini ai fornitori</p><h1>Acquisti</h1><p class="lead">Segna cosa devi ordinare e cosa hai già ordinato: merce, peso, trasporto e quanto resta da pagare. Quando imposti "Arrivato", i pezzi entrano in magazzino da soli.</p></div>
+  <div class="actions"><button class="btn primary" data-act="new-purchase" ${readOnly?'disabled':''}>Nuovo ordine fornitore</button></div></div>
+  <div class="kpis">
+    <div class="kpi dark"><span class="kpi-label">Da ordinare</span><span class="kpi-value">${eur(sumBy(todo))}</span><span class="kpi-sub">${todo.length} ${todo.length === 1 ? 'ordine' : 'ordini'} da inviare</span></div>
+    <div class="kpi"><span class="kpi-label">In arrivo</span><span class="kpi-value">${eur(sumBy(incoming))}</span><span class="kpi-sub">${incoming.reduce((t,a) => t + purchaseCalc(a).pieces, 0)} pezzi ordinati</span></div>
+    <div class="kpi"><span class="kpi-label">Ancora da pagare</span><span class="kpi-value">${eur(due)}</span><span class="kpi-sub">su ordini già inviati</span></div>
+  </div>
+  <div class="filters"><div class="seg scroll" role="group" aria-label="Stato">${[['open','Aperti'],['all','Tutti']].concat(PSTATUS.map(x=>[x,x])).map(([k,l]) => `<button data-pstatus="${h(k)}" aria-pressed="${ui.pStatus===k}">${h(l)}</button>`).join('')}</div></div>
+  <div class="tbl-wrap cardify"><table class="tbl"><thead><tr><th>N.</th><th>Data</th><th>Fornitore e articoli</th><th class="r">Pezzi</th><th class="r">Peso</th><th class="r">Totale</th><th class="r">Da pagare</th><th>Arrivo</th><th>Stato</th></tr></thead><tbody>${rows || '<tr><td colspan="9" class="muted">Nessun ordine fornitore in questo elenco.</td></tr>'}</tbody></table></div>`;
+}
+
+function vSuppliers(){
+  const cards = vis(S.suppliers).map(f => {
+    const prods = S.products.filter(p => p.supplier === f.id);
+    return `<button class="card ${sc(f)}" data-open-supplier="${h(f.id)}"><div><p class="eyebrow">${h(f.country||'—')}</p><h3>${h(f.name)}${tag(f)}</h3></div>
+      <dl class="kv"><dt>Consegna</dt><dd>${n(f.leadDays) ? n(f.leadDays)+' giorni' : '—'}</dd><dt>Minimo</dt><dd>${n(f.moq) ? n(f.moq)+' pz' : '—'}</dd><dt>Pagamento</dt><dd>${h(f.terms||'—')}</dd>${f.contact||f.email||f.phone?`<dt>Contatto</dt><dd>${h([f.contact,f.email,f.phone].filter(Boolean).join(' · '))}</dd>`:''}</dl>
+      <div class="chips">${prods.map(p => `<span class="chip">${h(catOf(p.cat).code)} ${h(p.name)}</span>`).join('') || '<span class="muted" style="font-size:13px">Nessun modello collegato</span>'}</div></button>`;
+  }).join('');
+  return `${sampleBanner()}<div class="view-head"><div><p class="eyebrow">Filiera</p><h1>Fornitori</h1><p class="lead">Da chi compri, tempi di consegna, quantità minime e condizioni di pagamento. Collega ogni modello al suo fornitore dalla scheda prodotto.</p></div>
+  <div class="actions"><button class="btn primary" data-act="new-supplier" ${readOnly?'disabled':''}>Nuovo fornitore</button></div></div>
+  <div class="cards">${cards || '<p class="muted">Nessun fornitore.</p>'}</div>`;
+}
+
+function vShipping(){
+  const v = n(S.settings.iva)/100, fx = n(S.settings.usdEur) || 1;
+  const frRows = vis(S.freight).map(f => {
+    const used = S.products.filter(p => { const pf = productFreight(p); return pf && pf.id === f.id; }).length;
+    return `<tr class="${sc(f)}" data-open-freight="${h(f.id)}"><td class="t-main"><b>${h(f.name)}</b>${tag(f)}<div class="muted" style="font-size:12.5px">${h((byId('suppliers', f.supplier) || {}).name || '')}</div></td>
+      <td class="r num" data-label="$/kg">${dec(n(f.usdPerKg))} $</td><td class="r num" data-label="€/kg">${eur(n(f.usdPerKg) * fx)}</td>
+      <td class="r num" data-label="Fisso">${n(f.fixedEur) ? eur(n(f.fixedEur)) : '—'}</td>
+      <td data-label="Resa"><span class="pill ${f.terms === 'DDP' ? 'ok' : 'warn'}">${h(f.terms || 'DDU')}</span></td>
+      <td class="r" data-label="Tempi">${h(f.transitDays || '—')}${S.settings.defaultFreight === f.id ? ' <span class="pill neutral">Predefinita</span>' : ''}</td><td class="r num" data-label="Modelli">${used}</td></tr>`; }).join('');
+  const rows = vis(S.shipping).map(r => { const diff = n(r.price)/(1+v) - n(r.cost);
+    return `<tr class="${sc(r)}" data-open-ship="${h(r.id)}"><td class="t-main"><b>${h(r.name)}</b>${tag(r)}<div class="muted" style="font-size:12.5px">${h(r.carrier||'')}</div></td><td data-label="Zona">${h(r.zone||'—')}</td><td class="r num" data-label="Peso max">${n(r.maxKg) ? dec(n(r.maxKg),1)+' kg' : '—'}</td>
+      <td class="r num" data-label="Costo tuo">${eur(n(r.cost))}</td><td class="r num" data-label="Prezzo cliente">${eur(n(r.price))}</td><td class="r num" data-label="Differenza" style="color:${diff<0?'var(--bad)':'inherit'}">${eur(diff)}</td>
+      <td class="r num" data-label="Modelli">${S.products.filter(p=>p.shipId===r.id).length}</td></tr>`; }).join('');
+  return `${sampleBanner()}<div class="view-head"><div><p class="eyebrow">Import e consegne</p><h1>Spedizioni</h1><p class="lead">Due tratte: dalla fabbrica a te (tariffe al kg, entrano nel costo pieno di ogni modello) e da te al cliente (corrieri, entrano negli ordini).</p></div></div>
+  <section class="ship-sec"><div class="sec-head"><div><h2>Dalla fabbrica a te</h2><p class="help">Tariffe al kg del fornitore o dello spedizioniere. Cambio usato: 1 $ = ${dec(fx,4)} €.</p></div><button class="btn primary" data-act="new-freight" ${readOnly?'disabled':''}>Nuova tariffa import</button></div>
+  <div class="tbl-wrap cardify"><table class="tbl"><thead><tr><th>Tratta</th><th class="r">$/kg</th><th class="r">€/kg</th><th class="r">Fisso</th><th>Resa</th><th class="r">Tempi</th><th class="r">Modelli</th></tr></thead><tbody>${frRows || '<tr><td colspan="7" class="muted">Nessuna tariffa import.</td></tr>'}</tbody></table></div>
+  <p class="help">DDU: la merce arriva a destinazione ma dazi, IVA all'importazione e spese di sdoganamento sono a carico tuo. DDP: sono inclusi nella tariffa.</p></section>
+  <section class="ship-sec"><div class="sec-head"><div><h2>Da te al cliente</h2><p class="help">Sopra ${eur(n(S.settings.freeShipOver))} di spesa la spedizione è gratuita per il cliente e il costo resta a te (modificabile in Impostazioni).</p></div><button class="btn primary" data-act="new-ship" ${readOnly?'disabled':''}>Nuova tariffa corriere</button></div>
+  <div class="tbl-wrap cardify"><table class="tbl"><thead><tr><th>Tariffa</th><th>Zona</th><th class="r">Peso max</th><th class="r">Costo tuo</th><th class="r">Prezzo cliente</th><th class="r">Differenza</th><th class="r">Modelli</th></tr></thead><tbody>${rows || '<tr><td colspan="7" class="muted">Nessuna tariffa.</td></tr>'}</tbody></table></div>
+  <p class="help">Prezzo cliente IVA inclusa. Differenza = prezzo senza IVA − costo corriere: se è negativa ogni spedizione ti costa.</p></section>`;
+}
+
+function vSettings(){
+  const st = S.settings;
+  const f = (label, key, affix, hint) => `<label class="fld"><span>${label}</span><div class="inp"><input id="set-${key}" data-set="${key}" type="number" step="any" inputmode="decimal" value="${h(st[key])}" ${readOnly?'disabled':''}><span class="affix">${affix}</span></div>${hint?`<span class="hint">${hint}</span>`:''}</label>`;
+  const extra = (st.extraCats || []).map((c,i) => `<div class="li" style="cursor:default"><div class="grow"><b>${h(c.code)} ${h(c.name)}</b><small>${h(LINES[c.line]||c.line)}</small></div><button class="btn sm danger" data-del-cat="${i}" ${readOnly?'disabled':''}>Rimuovi</button></div>`).join('');
+  return `<div class="view-head"><div><p class="eyebrow">Parametri</p><h1>Impostazioni</h1><p class="lead">Questi valori entrano in tutti i calcoli di prezzo, margine e preventivo.</p></div></div>
+  <div class="grid-2">
+    <section class="panel"><div class="panel-head"><h2>Prezzi e margini</h2></div><div class="panel-body"><div class="fgrid">
+      ${f('Aliquota IVA','iva','%','Prezzi di vendita inseriti IVA inclusa')}
+      ${f('Margine target','targetMargin','%','Soglia per "In target" e prezzo consigliato')}
+      ${f('Commissione pagamenti','feePct','%','Carta, PayPal, piattaforma e-commerce')}
+      ${f('Commissione fissa','feeFixed','€','Per ogni transazione')}
+      ${f('Spedizione gratis da','freeShipOver','€','Totale ordine IVA incl.; 0 = mai')}
+      ${f('Cambio: 1 dollaro =','usdEur','€', st.usdEurAt ? `Aggiornato ${fmtStamp(st.usdEurAt)}${st.usdEurSrc ? ' · ' + h(st.usdEurSrc) : ''}` : 'Inserito a mano')}
+      <div class="fld"><span>Aggiornamento del cambio</span><div class="actions"><button class="btn sm" data-act="fx-now" ${readOnly?'disabled':''}>Aggiorna ora</button></div><span class="hint">${mode === 'cloud' ? 'Online si aggiorna ogni ora con un\'attività programmata; il pulsante funziona se la pagina può collegarsi al sito del cambio.' : 'Ogni ora, finché la pagina è aperta.'}</span></div>
+    </div></div></section>
+    <section class="panel"><div class="panel-head"><h2>Archivio dati</h2></div><div class="panel-body">
+      <p style="margin:0 0 12px;color:var(--ink-2);font-size:14px">${mode==='cloud' ? 'I dati sono salvati nel cloud di questo artifact: li ritrovi da qualsiasi dispositivo con cui lo apri.' : 'I dati sono salvati nel browser di questo dispositivo. Esporta un backup regolarmente.'}</p>
+      <div class="actions"><button class="btn" data-act="export-json">Esporta backup (JSON)</button><button class="btn" data-act="export-csv">Esporta catalogo (CSV)</button>
+      <button class="btn" data-act="load-sample" ${readOnly?'disabled':''}>Rimetti i dati di esempio</button>
+      <label class="btn" ${readOnly?'style="opacity:.45;pointer-events:none"':''}>Importa backup<input type="file" id="import-file" accept=".json,application/json" hidden></label></div>
+      <p class="help">"Rimetti i dati di esempio" aggiunge solo gli esempi che mancano: i tuoi modelli e ordini non vengono toccati. L'import aggiunge o aggiorna i record con lo stesso codice interno; non cancella quelli che non sono nel file.</p>
+      <div id="export-fallback"></div>
+    </div></section>
+    <section class="panel"><div class="panel-head"><h2>Categorie aggiuntive</h2></div><div class="panel-body">
+      <p style="margin:0 0 12px;color:var(--ink-2);font-size:14px">Le 17 categorie di partenza sono fisse. Aggiungi qui nuove linee dal brandbook (tuta, felpa, polo, giacca tecnica…).</p>
+      <div class="list">${extra || '<p class="muted" style="margin:0 0 8px">Nessuna categoria aggiuntiva.</p>'}</div>
+      <div class="fgrid" style="margin-top:10px">
+        <label class="fld"><span>Codice</span><div class="inp"><input id="nc-code" placeholder="FC·04"></div></label>
+        <label class="fld"><span>Nome</span><div class="inp"><input id="nc-name" placeholder="Tute"></div></label>
+        <label class="fld"><span>Linea</span><div class="inp"><select id="nc-line"><option value="calcio">Calcio</option><option value="padel">Padel</option></select></div></label>
+      </div>
+      <div class="actions" style="margin-top:12px"><button class="btn" data-act="add-cat" ${readOnly?'disabled':''}>Aggiungi categoria</button></div>
+    </div></section>
+    <section class="panel"><div class="panel-head"><h2>Gradi di tempra</h2></div><div class="panel-body"><div class="list">
+      ${GRADES.map(g => `<div class="li" style="cursor:default"><span class="grade ${g}">${g}</span><div class="grow"><b>TEMPRA ${g}</b><small>${GRADE_DESC[g]}</small></div><span class="num muted">${S.products.filter(p=>p.grade===g).length} modelli</span></div>`).join('')}
+    </div></div></section>
+  </div>`;
+}
+
+/* ---------- Eventi pagina ---------- */
+document.addEventListener('click', async e => {
+  const t = e.target.closest('[data-open-product],[data-open-order],[data-open-custom],[data-open-supplier],[data-open-ship],[data-open-freight],[data-open-purchase],[data-pstatus],[data-act],[data-new-in],[data-line],[data-ostatus],[data-go],[data-del-cat]');
+  if(!t || t.closest('#sheet')) return;
+  const d = t.dataset;
+  if(d.openProduct) return openProduct(d.openProduct);
+  if(d.openOrder) return openOrder(d.openOrder);
+  if(d.openCustom) return openCustom(d.openCustom);
+  if(d.openSupplier) return openSupplier(d.openSupplier);
+  if(d.openShip) return openShip(d.openShip);
+  if(d.openFreight) return openFreight(d.openFreight);
+  if(d.openPurchase) return openPurchase(d.openPurchase);
+  if(d.pstatus){ ui.pStatus = d.pstatus; return render(); }
+  if(d.newIn) return openProduct(null, d.newIn);
+  if(d.line){ ui.line = d.line; return render(); }
+  if(d.ostatus){ ui.orderStatus = d.ostatus; return render(); }
+  if(d.go) return goView(d.go);
+  if(d.delCat !== undefined){ S.settings.extraCats = (S.settings.extraCats || []).filter((x,i) => i !== +d.delCat); render(); return saveSettings(); }
+  switch(d.act){
+    case 'new-product': return openProduct(null);
+    case 'new-order': return openOrder(null);
+    case 'new-custom': return openCustom(null);
+    case 'new-supplier': return openSupplier(null);
+    case 'new-ship': return openShip(null);
+    case 'new-freight': return openFreight(null);
+    case 'show-all': case 'show-mine': ui.onlyMine = d.act === 'show-mine'; try { localStorage.setItem('tempra-only-mine', ui.onlyMine ? '1' : '0'); } catch(e) {} return render();
+    case 'fx-now': t.disabled = true; await refreshFx(true); t.disabled = false; return;
+    case 'new-purchase': return openPurchase(null);
+    case 'export-csv': return exportCSV();
+    case 'export-json': return offerFile('tempra-backup-' + today() + '.json', JSON.stringify(S, null, 2));
+    case 'clear-sample': return armThen(t, 'Conferma: elimina esempi', clearSample);
+    case 'load-sample': t.disabled = true; return restoreSample();
+    case 'start-empty': t.disabled = true; await saveSettings(); render(); return toast('Pronto: inizia dal catalogo');
+    case 'add-cat': {
+      const code = $('#nc-code').value.trim(), name = $('#nc-name').value.trim(), line = $('#nc-line').value;
+      if(!name){ toast('Scrivi il nome della categoria'); return; }
+      S.settings.extraCats = (S.settings.extraCats || []).concat({id: uid('cat'), code: code || '—', name, line});
+      render(); await saveSettings(); return toast('Categoria aggiunta');
+    }
+  }
+});
+document.addEventListener('input', e => {
+  const t = e.target;
+  if(t.id === 'cat-search'){ ui.q = t.value; render(); return; }
+  if(t.dataset && t.dataset.set && !t.closest('#sheet')){ S.settings[t.dataset.set] = n(t.value); clearTimeout(vSettings._t); vSettings._t = setTimeout(saveSettings, 600); }
+});
+document.addEventListener('change', async e => {
+  if(e.target.id !== 'import-file') return;
+  const file = e.target.files && e.target.files[0]; if(!file) return;
+  try {
+    const data = JSON.parse(await file.text());
+    if(!data || typeof data !== 'object' || !COLS.some(c => Array.isArray(data[c]))) throw new Error('formato');
+    const ok = await writeAll(data);
+    if(ok) toast('Backup importato');
+  } catch(err){ toast('File non valido: usa un backup esportato da questo gestionale.'); }
+  e.target.value = '';
+});
+function armThen(btn, label, fn){
+  if(btn.dataset.armed){ delete btn.dataset.armed; fn(); return; }
+  const old = btn.textContent; btn.dataset.armed = '1'; btn.textContent = label; btn.classList.add('danger','armed');
+  setTimeout(() => { if(btn.isConnected && btn.dataset.armed){ delete btn.dataset.armed; btn.textContent = old; btn.classList.remove('armed'); } }, 4000);
+}
+async function clearSample(){
+  for(const c of COLS){ for(const d of S[c].filter(x => x.sample)) await deleteDoc(c, d.id); }
+  toast('Dati di esempio eliminati');
+}
+
+/* ---------- Export ---------- */
+async function offerFile(filename, text){
+  if(mode === 'cloud'){
+    let dl = null;
+    try { dl = await window.claude.use('downloads'); } catch(e) {}
+    if(dl){
+      try { await dl.save({filename, data: text}); toast('File pronto'); }
+      catch(e){ if(e && e.code !== 'declined') toast('Download non disponibile qui'); }
+      return;
+    }
+    showCopyFallback(filename, text); return;
+  }
+  try {
+    const url = URL.createObjectURL(new Blob([text], {type:'text/plain;charset=utf-8'}));
+    const a = document.createElement('a'); a.href = url; a.download = filename; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+  } catch(e){ showCopyFallback(filename, text); }
+}
+function showCopyFallback(filename, text){
+  if(view !== 'impostazioni'){ view = 'impostazioni'; renderTabs(); render(); }
+  const box = $('#export-fallback'); if(!box) return;
+  box.innerHTML = `<p class="help">Il download non è disponibile qui: copia il contenuto e salvalo come <b>${h(filename)}</b>.</p><textarea class="copybox" id="copybox" readonly>${h(text)}</textarea><button class="btn sm" id="copy-btn" style="margin-top:8px">Copia</button>`;
+  $('#copy-btn').onclick = () => { const ta = $('#copybox'); navigator.clipboard?.writeText(ta.value).then(() => toast('Copiato'), () => { ta.select(); }); };
+}
+function exportCSV(){
+  const head = ['Categoria','Codice','Linea','Modello','SKU','Grado','Colorway','Taglie/formato','Fornitore','Prezzo acquisto','Trasporto/pz','Dazi/pz','Packaging/pz','Personalizzazioni di serie/pz','Costo pieno','Prezzo vendita IVA incl.','Prezzo netto','Commissioni','Utile/pz','Margine %','Prezzo consigliato','Giacenza','Venduti','Disponibili'];
+  const q = v => { const s = String(v ?? ''); return /[;"\n]/.test(s) ? '"' + s.replace(/"/g,'""') + '"' : s; };
+  const lines = S.products.map(p => { const c = priceCalc(p), cat = catOf(p.cat), sold = soldQty(p.id), loaded = loadedQty(p);
+    return [cat.name, cat.code, LINES[cat.line]||cat.line, p.name, p.sku, p.grade, p.colorway, p.sizes, (byId('suppliers',p.supplier)||{}).name||'', dec(c.uc.purchase), dec(c.uc.freight), dec(c.uc.duties), dec(c.uc.pack), dec(c.uc.cust), dec(c.uc.total), dec(c.price), dec(c.net), dec(c.fees), dec(c.profit), dec(c.margin*100,1), dec(c.suggested), loaded, sold, loaded-sold].map(q).join(';'); });
+  offerFile('tempra-catalogo-' + today() + '.csv', '﻿' + [head.join(';')].concat(lines).join('\n'));
+}
+
+/* ---------- Pannello di modifica ---------- */
+let sheetSrc = null;
+function openSheet(html){
+  const item = sheetSrc; sheetSrc = null;
+  if(item && item.sample) html = html.replace('</header>', '</header><div class="banner sample" style="margin:0;border-radius:0;border-left-width:4px"><p><span class="tag ex" style="margin:0">Esempio</span> Questo è un dato di prova: quando salvi diventa <b>tuo</b>.</p></div>');
+  const el = $('#sheet');
+  el.innerHTML = `<div class="sheet-back" data-close></div><section class="sheet-panel" role="dialog" aria-modal="true">${html}</section>`;
+  el.hidden = false; document.body.classList.add('noscroll');
+  el.querySelectorAll('[data-close]').forEach(b => b.addEventListener('click', closeSheet));
+  el.querySelector('.sheet-panel').addEventListener('click', e => { const j = e.target.closest('[data-jump]'); if(j){ const t = document.getElementById(j.dataset.jump); if(t) t.scrollIntoView({behavior:'smooth', block:'start'}); } });
+  const first = el.querySelector('.sh-body input, .sh-body select'); if(first && window.matchMedia('(min-width:900px)').matches) first.focus();
+  return el.querySelector('.sheet-panel');
+}
+function closeSheet(){ const el = $('#sheet'); el.hidden = true; el.innerHTML = ''; document.body.classList.remove('noscroll'); }
+document.addEventListener('keydown', e => { if(e.key === 'Escape' && !$('#sheet').hidden) closeSheet(); });
+
+function fld(label, key, val, o = {}){
+  const id = 'f-' + key;
+  const dis = readOnly ? 'disabled' : '';
+  let ctl;
+  if(o.options){
+    ctl = `<select id="${id}" data-k="${key}" ${dis}>${o.options.map(([v,l]) => `<option value="${h(v)}" ${String(v)===String(val??'')?'selected':''}>${h(l)}</option>`).join('')}</select>`;
+  } else if(o.area){
+    ctl = `<textarea id="${id}" data-k="${key}" ${dis} placeholder="${h(o.ph||'')}">${h(val)}</textarea>`;
+  } else {
+    const num = o.num ? `type="number" step="any" inputmode="decimal" data-t="num"` : `type="${o.type||'text'}"`;
+    ctl = `<input id="${id}" data-k="${key}" ${num} value="${h(val ?? '')}" placeholder="${h(o.ph||'')}" ${dis}>`;
+  }
+  return `<label class="fld ${o.cls||''}"><span>${label}</span><div class="inp">${o.pre?`<span class="affix">${o.pre}</span>`:''}${ctl}${o.suf?`<span class="affix">${o.suf}</span>`:''}</div>${o.hint?`<span class="hint">${o.hint}</span>`:''}</label>`;
+}
+function bindFields(panel, draft, onChange){
+  const handler = e => {
+    const el = e.target; const k = el.dataset && el.dataset.k; if(!k) return;
+    draft[k] = el.dataset.t === 'num' ? n(el.value) : el.value;
+    onChange && onChange(k, e.type);
+  };
+  panel.addEventListener('input', handler);
+  panel.addEventListener('change', handler);
+}
+function footer(isNew, label){
+  return `<footer class="sh-foot">${isNew ? '' : `<button class="btn danger" data-del ${readOnly?'disabled':''}>Elimina</button><button class="btn ghost" data-dup ${readOnly?'disabled':''}>Duplica</button>`}
+    <span class="spacer"></span><button class="btn ghost" data-close>Annulla</button><button class="btn primary" data-save ${readOnly?'disabled':''}>${label}</button></footer>`;
+}
+function wireFooter(panel, {onSave, onDelete, onDup}){
+  panel.querySelector('[data-save]')?.addEventListener('click', onSave);
+  const del = panel.querySelector('[data-del]');
+  if(del) del.addEventListener('click', () => armThen(del, 'Conferma eliminazione', onDelete));
+  panel.querySelector('[data-dup]')?.addEventListener('click', onDup);
+}
+
+/* ----- Prodotto ----- */
+function openProduct(id, catId){
+  const src = id ? byId('products', id) : null; sheetSrc = src;
+  const d = src ? clone(src) : {id: uid('p'), cat: catId || allCats()[0].id, name:'', sku:'', grade:'PRO', colorway:'Lama · Forgia', sizes:'', supplier: S.suppliers[0]?.id || '', cost:0, lotQty:50, lotShip:0, duties:0, packaging:0, baseCustoms:[], price:0, shipId: S.shipping[0]?.id || '', stock:0, reorder:5, specs:'', currency:'EUR', freightId:'', weightKg:0};
+  d.baseCustoms = d.baseCustoms || [];
+  d.currency = d.currency || 'EUR'; d.freightId = d.freightId || ''; d.weightKg = n(d.weightKg); d.weightUnit = d.weightUnit === 'g' ? 'g' : 'kg';
+  const catOpts = allCats().map(c => [c.id, `${c.code} ${c.name}`]);
+  const supOpts = [['','— Nessuno —']].concat(S.suppliers.map(f => [f.id, f.name]));
+  const shipOpts = [['','— Nessuna —']].concat(S.shipping.map(r => [r.id, `${r.name} (${eur(n(r.cost))})`]));
+  const customsBox = () => {
+    const list = S.customs.filter(c => !c.cats || !c.cats.length || c.cats.includes(d.cat));
+    if(!list.length) return '<p class="muted" style="margin:0">Nessuna personalizzazione per questa categoria. Creane una nella sezione Personalizzazioni.</p>';
+    return `<div class="checks">${list.map(c => `<label class="check"><input type="checkbox" data-bc="${h(c.id)}" ${d.baseCustoms.includes(c.id)?'checked':''} ${readOnly?'disabled':''}><span>${h(c.name)}<small>${h(c.method)} · ${eur(n(c.cost))}/pz${n(c.setup)?' · impianto '+eur(n(c.setup)):''}</small></span></label>`).join('')}</div>`;
+  };
+  const cat = catOf(d.cat);
+  const panel = openSheet(`<header class="sh-head"><div><p class="eyebrow" id="p-eyebrow">${h(cat.code)} · ${h(cat.name)}</p><h2>${src ? h(src.name || 'Modello') : 'Nuovo modello'}</h2></div><button class="icon-btn" data-close aria-label="Chiudi">✕</button></header>
+  <div class="sh-body"><div class="ed-grid"><div><div class="mini-sum" id="mini-sum"></div>
+    <fieldset><legend>Modello</legend><div class="fgrid">
+      ${fld('Categoria','cat',d.cat,{options:catOpts, cls:'span2'})}
+      ${fld('Nome modello','name',d.name,{ph:'Es. Maglia gara FC·01', cls:'span2'})}
+      ${fld('SKU / codice','sku',d.sku,{ph:'TMP-FC01-LF'})}
+      <label class="fld"><span>Grado di tempra</span><div class="seg" role="group" aria-label="Grado">${GRADES.map(g => `<button type="button" data-grade="${g}" aria-pressed="${d.grade===g}" ${readOnly?'disabled':''}>${g}</button>`).join('')}</div></label>
+      ${fld('Colorway','colorway',d.colorway,{ph:'Lama · Forgia'})}
+      ${fld('Taglie / formato','sizes',d.sizes,{ph:'XS · S · M · L · XL'})}
+      ${fld('Fornitore','supplier',d.supplier,{options:supOpts, cls:'span2'})}
+      ${fld('Specifiche e note','specs',d.specs,{area:true, cls:'full', ph:'Materiali, misure, dettagli tecnici'})}
+    </div></fieldset>
+    <fieldset><legend>Acquisto</legend><div class="fgrid">
+      ${fld('Prezzo di acquisto','cost',d.cost,{num:true, suf:'/pz', hint:'Dal fornitore, IVA esclusa'})}
+      ${fld('Valuta','currency',d.currency,{options:[['EUR','€ Euro'],['USD','$ Dollari USA']], hint:`1 $ = ${dec(n(S.settings.usdEur),4)} € (Impostazioni)`})}
+      ${fld('Pezzi per lotto','lotQty',d.lotQty,{num:true, suf:'pz', hint:'Quantità ordinata (o minimo)'})}
+      <label class="fld"><span>Peso per pezzo</span><div class="inp"><input id="f-weight" type="number" step="any" min="0" inputmode="decimal" value="${d.weightKg ? (d.weightUnit === 'g' ? Math.round(d.weightKg * 1000) : d.weightKg) : ''}" placeholder="0" ${readOnly?'disabled':''}><select id="f-weightUnit" aria-label="Unità di peso" style="flex:none;width:auto;border-left:1px solid var(--line)" ${readOnly?'disabled':''}><option value="kg" ${d.weightUnit !== 'g' ? 'selected' : ''}>kg</option><option value="g" ${d.weightUnit === 'g' ? 'selected' : ''}>g</option></select></div><span class="hint">Lordo con imballo: calcola trasporto import e spedizione ordini</span></label>
+      ${fld('Trasporto dalla fabbrica','freightId',d.freightId,{options:[['',`Automatico dal peso · tratta predefinita (${h((byId('freight', S.settings.defaultFreight) || {name:'—'}).name)})`]].concat(S.freight.map(f => [f.id, `${f.name} · ${dec(n(f.usdPerKg))} $/kg ${f.terms||''}`])).concat([['manual','Costo del lotto, lo inserisco io']]), cls:'span2'})}
+      <div id="fr-manual" ${d.freightId === 'manual' ? '' : 'hidden'}>${fld('Trasporto del lotto','lotShip',d.lotShip,{num:true, suf:'€', hint:'Corriere/import diviso sui pezzi'})}</div>
+      <div id="duties-box">${fld('Dazi doganali','duties',d.duties,{num:true, suf:'%', hint:'Sul valore merce; 0 se fornitore UE'})}</div>
+      <div id="duties-ddp" class="fld"><span>Dazi doganali</span><p class="help" style="margin:4px 0 0">Inclusi nella tariffa DDP del trasporto: non si pagano a parte.</p></div>
+      ${fld('Packaging ed etichette','packaging',d.packaging,{num:true, suf:'€/pz', hint:'Scatola, hangtag, busta'})}
+      ${fld('Design del modello','designCost',d.designCost,{num:true, suf:'€ una tantum', hint:'Una volta sola: va nel primo ordine campione al fornitore'})}
+    </div></fieldset>
+    <fieldset><legend>Personalizzazioni di serie</legend><p class="help" style="margin:0 0 10px">Lavorazioni sempre presenti sul capo (logo TEMPRA, etichetta). Il costo d'impianto è diviso sui pezzi del lotto.</p><div id="bc-box">${customsBox()}</div></fieldset>
+    <fieldset><legend>Vendita e magazzino</legend><div class="fgrid">
+      ${fld('Prezzo di vendita','price',d.price,{num:true, suf:'€ IVA incl.'})}
+      ${fld('Spedizione tipica','shipId',d.shipId,{options:shipOpts, cls:'span2'})}
+      ${fld('Giacenza iniziale','stock',d.stock,{num:true, suf:'pz', hint:'Iniziale; gli ordini fornitori arrivati si sommano da soli'})}
+      ${fld('Soglia di riordino','reorder',d.reorder,{num:true, suf:'pz'})}
+    </div></fieldset>
+  </div><aside class="ed-sum" id="p-sum"></aside></div></div>
+  ${footer(!src, src ? 'Salva modifiche' : 'Crea modello')}`);
+  const sum = () => {
+    const c = priceCalc(d), s = status(c);
+    const tot = Math.max(c.price, c.uc.total + c.vat + c.fees, 0.0001);
+    const wCost = Math.min(c.uc.total, c.price || c.uc.total) / tot * 100;
+    const wTax = (c.vat + c.fees) / tot * 100;
+    const wProf = Math.max(0, c.profit) / tot * 100;
+    const av = avail(d), inc = incomingQty(d.id), arr = arrivedQty(d.id);
+    $('#p-sum').innerHTML = `<div class="sum"><p class="eyebrow">Scheda prezzo</p>
+      <div class="sum-big">${eur(c.price)}<small>al pubblico</small></div><span class="pill ${s.cls}">${s.label}</span>
+      <div class="compbar" role="img" aria-label="Composizione del prezzo: costo ${eur(c.uc.total)}, IVA e commissioni ${eur(c.vat + c.fees)}, utile ${eur(c.profit)}">
+        <span class="seg-cost" style="width:${wCost}%" title="Costo pieno ${eur(c.uc.total)}"></span><span class="seg-tax" style="width:${wTax}%" title="IVA e commissioni ${eur(c.vat+c.fees)}"></span><span class="seg-profit" style="width:${wProf}%" title="Utile ${eur(c.profit)}"></span></div>
+      <div class="legend-inline"><span><i class="seg-cost"></i>Costo</span><span><i class="seg-tax"></i>IVA + commissioni</span><span><i class="seg-profit"></i>Utile</span></div>
+      <dl>
+        <dt class="sub-h">Costo per pezzo</dt>
+        <dt>Acquisto${d.currency === 'USD' ? ` (${dec(n(d.cost))} $)` : ''}</dt><dd>${eur(c.uc.purchase)}</dd>
+        <dt>${c.uc.fr ? `Trasporto ${h(c.uc.fr.name.split('·').pop().trim())} (${fmtKg(d.weightKg, d.weightUnit)} × ${dec(n(c.uc.fr.usdPerKg))} $/kg)` : `Trasporto (lotto ÷ ${c.uc.lot})`}</dt><dd>${eur(c.uc.freight)}</dd>
+        ${c.uc.fr && c.uc.fr.terms === 'DDP' ? '<dt>Dazi</dt><dd>inclusi (DDP)</dd>' : `<dt>Dazi</dt><dd>${eur(c.uc.duties)}</dd>`}
+        <dt>Packaging</dt><dd>${eur(c.uc.pack)}</dd>
+        <dt>Personalizzazioni di serie</dt><dd>${eur(c.uc.cust)}</dd>
+        <dt class="tot">Costo pieno</dt><dd class="tot">${eur(c.uc.total)}</dd>
+        <dt class="sub-h">Vendita</dt>
+        <dt>Prezzo senza IVA</dt><dd>${eur(c.net)}</dd>
+        <dt>IVA ${n(S.settings.iva)}%</dt><dd>${eur(c.vat)}</dd>
+        <dt>Commissioni pagamento</dt><dd>${eur(c.fees)}</dd>
+        <dt class="tot">Utile per pezzo</dt><dd class="tot ${c.profit<0?'neg':'pos'}">${eur(c.profit)}</dd>
+        <dt>Margine</dt><dd>${pct(c.margin)}</dd>
+        <dt>Ricarico sul costo</dt><dd>${Number.isFinite(c.markup) ? '× ' + dec(c.markup) : '—'}</dd>
+      </dl>
+      <div class="sum-note"><span>Prezzo consigliato per margine ${n(S.settings.targetMargin)}%: <b>${eur(c.suggested)}</b></span>${readOnly || !Number.isFinite(c.suggested) ? '' : '<button class="btn sm" data-use-suggested>Usa questo prezzo</button>'}</div>
+      <div class="sum-note">${c.ship ? `<span>Spedizione ${h(c.ship.name)}: se la offri gratis l'utile scende a <b>${eur(c.profitFreeShip)}</b>; se la fai pagare ${eur(n(c.ship.price))} diventa <b>${eur(c.profitPaidShip)}</b>.</span>` : '<span>Scegli una spedizione tipica per vedere l\'effetto sul margine.</span>'}
+        ${S.freight.length && n(d.weightKg) > 0 ? `<span>Trasporto per pezzo con ${fmtKg(d.weightKg, d.weightUnit)}: ${S.freight.map(f => `${h(f.name.split('·').pop().trim())} <b>${eur(freightPerPiece(f, d.weightKg, c.uc.lot))}</b>`).join(' · ')}.</span>` : ''}
+        ${c.uc.fr && !n(d.weightKg) ? '<span>Inserisci il peso per pezzo per calcolare il trasporto al kg.</span>' : ''}
+        ${c.uc.fr && c.uc.fr.terms !== 'DDP' ? '<span>Resa DDU: dazi, IVA all\'importazione e sdoganamento li paghi all\'arrivo. I dazi sono nella riga Dazi; l\'IVA import la recuperi con la partita IVA.</span>' : ''}
+        ${n(d.designCost) > 0 ? (() => { const own = designOwner(d.id); const o = own && byId('purchases', own); return `<span>Design ${eur(n(d.designCost))}: ${o ? `conteggiato nell'ordine campione <b>${h(o.number)}</b>` : 'verrà conteggiato nel primo ordine campione al fornitore con questo modello'}. Si ripaga con <b>${c.profit > 0 ? Math.ceil(n(d.designCost) / c.profit) : '—'} pezzi</b>.</span>`; })() : ''}
+        <span>Lotto da ${c.uc.lot} pz: investimento <b>${eur(c.uc.total * c.uc.lot)}</b>, utile potenziale <b>${eur(c.profit * c.uc.lot)}</b>.</span>
+        <span>Magazzino: ${n(d.stock)} iniziali${arr ? ` + ${arr} arrivati dai fornitori` : ''}, ${soldQty(d.id)} venduti, <b>${Math.max(0, av)} disponibili</b>${av < 0 ? ` · <b style="color:#FF8E96">mancano ${-av} pezzi</b> per gli ordini già confermati: ordinali al fornitore` : ''}${inc ? `, ${inc} in arrivo` : ''}.</span></div>
+    </div>`;
+    $('#mini-sum').innerHTML = `<div><small>Costo pieno</small><b>${eur(c.uc.total)}</b></div><div><small>Utile/pz</small><b class="${c.profit<0?'neg':'pos'}">${eur(c.profit)}</b></div><div><small>Margine</small><b>${pct(c.margin)}</b></div><button type="button" data-jump="p-sum">Scheda prezzo completa ↓</button>`;
+    const us = $('#p-sum [data-use-suggested]');
+    if(us) us.addEventListener('click', () => { d.price = c.suggested; $('#f-price').value = c.suggested.toFixed(2); sum(); });
+  };
+  bindFields(panel, d, (k) => {
+    if(k === 'cat'){ const cc = catOf(d.cat); $('#p-eyebrow').textContent = `${cc.code} · ${cc.name}`; $('#bc-box').innerHTML = customsBox(); }
+    if(k === 'freightId'){ $('#fr-manual').hidden = d.freightId !== 'manual'; dutiesVis(); }
+    sum();
+  });
+  const dutiesVis = () => { const fr = productFreight(d); const ddp = !!(fr && fr.terms === 'DDP'); $('#duties-box').hidden = ddp; $('#duties-ddp').hidden = !ddp; };
+  dutiesVis();
+  const wIn = $('#f-weight'), wU = $('#f-weightUnit');
+  wIn.addEventListener('input', () => { const v = n(wIn.value); d.weightKg = d.weightUnit === 'g' ? v / 1000 : v; sum(); });
+  wU.addEventListener('change', () => { d.weightUnit = wU.value; if(d.weightKg) wIn.value = d.weightUnit === 'g' ? Math.round(d.weightKg * 1000) : +d.weightKg.toFixed(3); sum(); });
+  panel.addEventListener('change', e => {
+    const bc = e.target.dataset && e.target.dataset.bc; if(!bc) return;
+    d.baseCustoms = e.target.checked ? [...new Set(d.baseCustoms.concat(bc))] : d.baseCustoms.filter(x => x !== bc);
+    sum();
+  });
+  panel.addEventListener('click', e => {
+    const g = e.target.closest('[data-grade]'); if(!g) return;
+    d.grade = g.dataset.grade; panel.querySelectorAll('[data-grade]').forEach(b => b.setAttribute('aria-pressed', b.dataset.grade === d.grade));
+  });
+  sum();
+  wireFooter(panel, {
+    onSave: async () => { if(!d.name.trim()){ toast('Dai un nome al modello'); $('#f-name').focus(); return; } delete d.sample; closeSheet(); if(await saveDoc('products', d)) toast('Modello salvato'); },
+    onDelete: async () => { closeSheet(); await deleteDoc('products', d.id); toast('Modello eliminato'); },
+    onDup: () => { const c = clone(d); c.id = uid('p'); c.name = d.name + ' (copia)'; c.stock = 0; delete c.sample; closeSheet(); saveDoc('products', c).then(ok => { if(ok){ toast('Copia creata'); openProduct(c.id); } }); }
+  });
+}
+
+/* ----- Personalizzazione ----- */
+function openCustom(id){
+  const src = id ? byId('customs', id) : null; sheetSrc = src;
+  const d = src ? clone(src) : {id: uid('c'), name:'', method: METHODS[0], cost:0, setup:0, price:0, cats:[], notes:''};
+  d.cats = d.cats || [];
+  const catChecks = ['calcio','padel'].map(l => `<p class="eyebrow" style="margin:10px 0 6px">${LINES[l]}</p><div class="checks">${allCats().filter(c=>c.line===l).map(c => `<label class="check"><input type="checkbox" data-cc="${h(c.id)}" ${d.cats.includes(c.id)?'checked':''} ${readOnly?'disabled':''}><span>${h(c.code)} ${h(c.name)}</span></label>`).join('')}</div>`).join('');
+  const panel = openSheet(`<header class="sh-head"><div><p class="eyebrow">Personalizzazione</p><h2>${src ? h(src.name) : 'Nuova personalizzazione'}</h2></div><button class="icon-btn" data-close aria-label="Chiudi">✕</button></header>
+  <div class="sh-body"><div class="ed-grid"><div>
+    <fieldset><legend>Lavorazione</legend><div class="fgrid">
+      ${fld('Nome','name',d.name,{ph:'Es. Numero sul retro', cls:'span2'})}
+      ${fld('Tecnica','method',d.method,{options:METHODS.map(m=>[m,m])})}
+      ${fld('Costo per pezzo','cost',d.cost,{num:true, suf:'€/pz', hint:'Quanto la paghi al laboratorio'})}
+      ${fld('Costo impianto','setup',d.setup,{num:true, suf:'€', hint:'Una tantum: cliché, punch, telaio'})}
+      ${fld('Prezzo al cliente','price',d.price,{num:true, suf:'€/pz IVA incl.', hint:'0 = inclusa di serie nel prodotto'})}
+      ${fld('Note','notes',d.notes,{area:true, cls:'full'})}
+    </div></fieldset>
+    <fieldset><legend>Su quali prodotti</legend><p class="help" style="margin:0">Nessuna selezione = disponibile per tutte le categorie.</p>${catChecks}</fieldset>
+  </div><aside class="ed-sum" id="c-sum"></aside></div></div>
+  ${footer(!src, src ? 'Salva modifiche' : 'Crea personalizzazione')}`);
+  const sum = () => {
+    const v = n(S.settings.iva)/100, net = n(d.price)/(1+v), m = net - n(d.cost);
+    const be = n(d.setup) > 0 && m > 0 ? Math.ceil(n(d.setup)/m) : null;
+    $('#c-sum').innerHTML = `<div class="sum"><p class="eyebrow">Resa</p><div class="sum-big">${n(d.price) ? eur(n(d.price)) : 'Di serie'}<small>${n(d.price) ? 'al cliente' : 'costo nel prodotto'}</small></div>
+    <dl><dt>Prezzo senza IVA</dt><dd>${eur(net)}</dd><dt>Costo per pezzo</dt><dd>${eur(n(d.cost))}</dd><dt class="tot">Guadagno per pezzo</dt><dd class="tot ${m<0?'neg':'pos'}">${eur(m)}</dd>
+    <dt>Impianto</dt><dd>${eur(n(d.setup))}</dd></dl>
+    <div class="sum-note">${n(d.price) ? (be ? `<span>L'impianto si ripaga dopo <b>${be} pezzi</b>.</span>` : (n(d.setup) ? '<span>Con questo prezzo l\'impianto non si ripaga mai.</span>' : '<span>Nessun impianto da ammortizzare.</span>')) : '<span>Seleziona questa lavorazione nei modelli come "di serie": il costo verrà sommato al costo pieno.</span>'}</div></div>`;
+  };
+  bindFields(panel, d, sum);
+  panel.addEventListener('change', e => { const cc = e.target.dataset && e.target.dataset.cc; if(!cc) return; d.cats = e.target.checked ? [...new Set(d.cats.concat(cc))] : d.cats.filter(x => x !== cc); });
+  sum();
+  wireFooter(panel, {
+    onSave: async () => { if(!d.name.trim()){ toast('Dai un nome alla personalizzazione'); return; } delete d.sample; closeSheet(); if(await saveDoc('customs', d)) toast('Personalizzazione salvata'); },
+    onDelete: async () => { closeSheet(); await deleteDoc('customs', d.id); toast('Personalizzazione eliminata'); },
+    onDup: () => { const c = clone(d); c.id = uid('c'); c.name += ' (copia)'; delete c.sample; closeSheet(); saveDoc('customs', c).then(ok => ok && openCustom(c.id)); }
+  });
+}
+
+/* ----- Fornitore ----- */
+function openSupplier(id){
+  const src = id ? byId('suppliers', id) : null; sheetSrc = src;
+  const d = src ? clone(src) : {id: uid('f'), name:'', country:'', contact:'', email:'', phone:'', website:'', leadDays:0, moq:0, terms:'', notes:''};
+  const prods = S.products.filter(p => p.supplier === d.id);
+  const panel = openSheet(`<header class="sh-head"><div><p class="eyebrow">Fornitore</p><h2>${src ? h(src.name) : 'Nuovo fornitore'}</h2></div><button class="icon-btn" data-close aria-label="Chiudi">✕</button></header>
+  <div class="sh-body"><div class="ed-grid"><div>
+    <fieldset><legend>Anagrafica</legend><div class="fgrid">
+      ${fld('Ragione sociale','name',d.name,{cls:'span2'})}
+      ${fld('Paese','country',d.country)}
+      ${fld('Referente','contact',d.contact)}
+      ${fld('Email','email',d.email,{type:'email'})}
+      ${fld('Telefono / WhatsApp','phone',d.phone,{type:'tel'})}
+      ${fld('Sito o catalogo','website',d.website,{cls:'span2'})}
+    </div></fieldset>
+    <fieldset><legend>Condizioni</legend><div class="fgrid">
+      ${fld('Tempo di consegna','leadDays',d.leadDays,{num:true, suf:'giorni'})}
+      ${fld('Ordine minimo','moq',d.moq,{num:true, suf:'pz'})}
+      ${fld('Pagamento','terms',d.terms,{cls:'span2', ph:'Es. 30% anticipo, saldo alla spedizione'})}
+      ${fld('Note','notes',d.notes,{area:true, cls:'full'})}
+    </div></fieldset>
+  </div><aside class="ed-sum"><div class="sum"><p class="eyebrow">Modelli collegati</p><div class="sum-big">${prods.length}<small>${prods.length===1?'modello':'modelli'}</small></div>
+    <dl>${prods.map(p => `<dt>${h(p.name)}</dt><dd>${eur(n(p.cost))}</dd>`).join('') || '<dt>Nessuno</dt><dd></dd>'}</dl>
+    <div class="sum-note"><span>Per collegare un modello apri la sua scheda nel Catalogo e scegli questo fornitore.</span></div></div></aside></div></div>
+  ${footer(!src, src ? 'Salva modifiche' : 'Crea fornitore')}`);
+  bindFields(panel, d);
+  wireFooter(panel, {
+    onSave: async () => { if(!d.name.trim()){ toast('Scrivi il nome del fornitore'); return; } delete d.sample; closeSheet(); if(await saveDoc('suppliers', d)) toast('Fornitore salvato'); },
+    onDelete: async () => { closeSheet(); await deleteDoc('suppliers', d.id); toast('Fornitore eliminato'); },
+    onDup: () => { const c = clone(d); c.id = uid('f'); c.name += ' (copia)'; delete c.sample; closeSheet(); saveDoc('suppliers', c).then(ok => ok && openSupplier(c.id)); }
+  });
+}
+
+/* ----- Spedizione ----- */
+function openShip(id){
+  const src = id ? byId('shipping', id) : null; sheetSrc = src;
+  const d = src ? clone(src) : {id: uid('s'), name:'', carrier:'', zone:'Italia', maxKg:0, cost:0, price:0, notes:''};
+  const panel = openSheet(`<header class="sh-head"><div><p class="eyebrow">Tariffa di spedizione</p><h2>${src ? h(src.name) : 'Nuova tariffa'}</h2></div><button class="icon-btn" data-close aria-label="Chiudi">✕</button></header>
+  <div class="sh-body"><div class="ed-grid"><div><fieldset><legend>Tariffa</legend><div class="fgrid">
+    ${fld('Nome','name',d.name,{cls:'span2', ph:'Es. Italia · pacco medio'})}
+    ${fld('Corriere','carrier',d.carrier)}
+    ${fld('Zona','zone',d.zone,{options:[['Italia','Italia'],['UE','UE'],['Extra UE','Extra UE'],['Locale','Locale']]})}
+    ${fld('Peso massimo','maxKg',d.maxKg,{num:true, suf:'kg'})}
+    ${fld('Costo corriere','cost',d.cost,{num:true, suf:'€', hint:'Quanto paghi tu, IVA esclusa'})}
+    ${fld('Prezzo al cliente','price',d.price,{num:true, suf:'€ IVA incl.'})}
+    ${fld('Note','notes',d.notes,{area:true, cls:'full'})}
+  </div></fieldset></div><aside class="ed-sum" id="s-sum"></aside></div></div>
+  ${footer(!src, src ? 'Salva modifiche' : 'Crea tariffa')}`);
+  const sum = () => { const v = n(S.settings.iva)/100, diff = n(d.price)/(1+v) - n(d.cost);
+    $('#s-sum').innerHTML = `<div class="sum"><p class="eyebrow">Per spedizione</p><div class="sum-big">${eur(diff)}<small>${diff < 0 ? 'a tuo carico' : 'di differenza'}</small></div>
+    <dl><dt>Pagato dal cliente (senza IVA)</dt><dd>${eur(n(d.price)/(1+v))}</dd><dt>Costo corriere</dt><dd>${eur(n(d.cost))}</dd><dt class="tot">Se gratuita per il cliente</dt><dd class="tot neg">${eur(-n(d.cost))}</dd></dl></div>`; };
+  bindFields(panel, d, sum); sum();
+  wireFooter(panel, {
+    onSave: async () => { if(!d.name.trim()){ toast('Dai un nome alla tariffa'); return; } delete d.sample; closeSheet(); if(await saveDoc('shipping', d)) toast('Tariffa salvata'); },
+    onDelete: async () => { closeSheet(); await deleteDoc('shipping', d.id); toast('Tariffa eliminata'); },
+    onDup: () => { const c = clone(d); c.id = uid('s'); c.name += ' (copia)'; delete c.sample; closeSheet(); saveDoc('shipping', c).then(ok => ok && openShip(c.id)); }
+  });
+}
+
+/* ----- Ordine al fornitore ----- */
+function nextPurchaseNumber(){
+  const max = S.purchases.reduce((m,a) => Math.max(m, parseInt(String(a.number||'').replace(/\D/g,''),10) || 0), 0);
+  return 'ACQ-' + String(max + 1).padStart(4,'0');
+}
+function openPurchase(id){
+  const src = id ? byId('purchases', id) : null; sheetSrc = src;
+  const d = src ? clone(src) : {id: uid('a'), number: nextPurchaseNumber(), supplier: S.suppliers[0]?.id || '', date: today(), status:'Da ordinare', freightId:'', expected:'', extraCost:0, deposit:0, notes:'', items:[]};
+  d.items = d.items || [];
+  const supOpts = [['','Più fornitori · spedizione unica']].concat(S.suppliers.map(f => [f.id, f.name]));
+  const frOpts = [['','Quella di ogni modello']].concat(S.freight.map(f => [f.id, `${f.name} · ${dec(n(f.usdPerKg))} $/kg · ${f.transitDays || ''}`]));
+  const prodOpts = sel => { const o = p => `<option value="${h(p.id)}" ${p.id===sel?'selected':''}>${h(p.name)}</option>`;
+    const head = sel ? '' : '<option value="">— scegli —</option>';
+    if(!d.supplier){
+      const groups = S.suppliers.map(f => [f.name, S.products.filter(p => p.supplier === f.id)]).concat([['Senza fornitore', S.products.filter(p => !byId('suppliers', p.supplier))]]);
+      return head + groups.filter(g => g[1].length).map(([l, ps]) => `<optgroup label="${h(l)}">${ps.map(o).join('')}</optgroup>`).join('');
+    }
+    const mine = S.products.filter(p => p.supplier === d.supplier), others = S.products.filter(p => p.supplier !== d.supplier);
+    return head + (mine.length ? `<optgroup label="Di questo fornitore">${mine.map(o).join('')}</optgroup>` : '') + (others.length ? `<optgroup label="Altri modelli">${others.map(o).join('')}</optgroup>` : ''); };
+  const linesHtml = () => d.items.map((it, i) => `<div class="ol"><label class="fld ol-prod"><span>Modello</span><div class="inp"><select data-pi="${i}" data-pk="pid" ${readOnly?'disabled':''}>${prodOpts(it.pid)}</select></div></label>
+    <label class="fld"><span>Pezzi</span><div class="inp"><input type="number" min="0" step="1" inputmode="numeric" data-pi="${i}" data-pk="qty" value="${n(it.qty)}" ${readOnly?'disabled':''}></div></label>
+    <label class="fld"><span>Costo/pz</span><div class="inp"><input type="number" step="any" inputmode="decimal" data-pi="${i}" data-pk="cost" value="${n(it.cost)}" ${readOnly?'disabled':''}><select data-pi="${i}" data-pk="currency" style="flex:none;width:auto;border-left:1px solid var(--line)" ${readOnly?'disabled':''}><option value="EUR" ${it.currency!=='USD'?'selected':''}>€</option><option value="USD" ${it.currency==='USD'?'selected':''}>$</option></select></div></label>
+    <div class="ol-tot num" id="pl-tot-${i}"></div><button class="icon-btn" data-prm="${i}" aria-label="Rimuovi riga" ${readOnly?'disabled':''}>✕</button>
+    ${!d.supplier && it.pid ? `<div class="ol-cust muted" style="font-size:12.5px">Fornitore: ${h((byId('suppliers', lineSupplier(it)) || {name:'non indicato nella scheda modello'}).name)}</div>` : ''}</div>`).join('') || '<p class="muted" style="margin:0">Aggiungi i modelli da ordinare.</p>';
+  const panel = openSheet(`<header class="sh-head"><div><p class="eyebrow mono">${h(d.number)}</p><h2>${src ? 'Ordine fornitore' : 'Nuovo ordine fornitore'}</h2></div><button class="icon-btn" data-close aria-label="Chiudi">✕</button></header>
+  <div class="sh-body"><div class="ed-grid"><div><div class="mini-sum" id="mini-sum"></div>
+    <fieldset><legend>Ordine</legend><div class="fgrid">
+      ${fld('Fornitore','supplier',d.supplier,{options:supOpts, cls:'span2', hint:'"Più fornitori": articoli da fabbriche diverse, un solo spedizioniere'})}
+      ${fld('Data','date',d.date,{type:'date'})}
+      ${fld('Stato','status',d.status,{options:PSTATUS.map(x=>[x,x]), hint:'"Arrivato" carica i pezzi in magazzino'})}
+      ${fld('Trasporto','freightId',d.freightId,{options:frOpts, cls:'span2'})}
+      ${fld('Arrivo previsto','expected',d.expected,{type:'date'})}
+      <label class="fld full"><span>Tipo di ordine</span><div class="check"><input type="checkbox" id="pa-sample" ${d.isSample ? 'checked' : ''} ${readOnly?'disabled':''}><span>Ordine campione<small>Aggiunge in automatico il costo di design dei modelli, una sola volta per modello</small></span></div></label>
+    </div></fieldset>
+    <fieldset><legend>Articoli</legend><div id="pl-box">${linesHtml()}</div>
+      <div class="actions" style="margin-top:12px"><button class="btn sm" data-padd ${readOnly?'disabled':''}>+ Aggiungi modello</button><button class="btn sm" data-preorder ${readOnly?'disabled':''}>+ Tutti quelli da riordinare</button></div>
+      <p class="help">Il costo parte da quello della scheda modello; cambialo se il fornitore ti fa un prezzo diverso.</p></fieldset>
+    <fieldset><legend>Pagamento</legend><div class="fgrid">
+      ${fld('Altri costi','extraCost',d.extraCost,{num:true, suf:'€', hint:'Campioni, cliché, bonifico estero…'})}
+      ${fld('Acconto già pagato','deposit',d.deposit,{num:true, suf:'€'})}
+      ${fld('Note','notes',d.notes,{area:true, cls:'full', ph:'Accordi, taglie, colori, riferimenti chat'})}
+    </div></fieldset>
+  </div><aside class="ed-sum" id="pa-sum"></aside></div></div>
+  ${footer(!src, src ? 'Salva modifiche' : 'Crea ordine fornitore')}`);
+  const sum = () => {
+    const c = purchaseCalc(d), fx = n(S.settings.usdEur) || 1;
+    d.items.forEach((it, i) => { const el = $('#pl-tot-' + i); if(el) el.innerHTML = `<small>${n(it.qty)} pz</small>${eur(n(it.qty) * n(it.cost) * (it.currency === 'USD' ? fx : 1))}`; });
+    $('#mini-sum').innerHTML = `<div><small>Totale</small><b>${eur(c.total)}</b></div><div><small>Peso</small><b>${dec(c.weight,1)} kg</b></div><div><small>Da pagare</small><b>${eur(c.due)}</b></div><button type="button" data-jump="pa-sum">Riepilogo completo ↓</button>`;
+    $('#pa-sum').innerHTML = `<div class="sum"><p class="eyebrow">Riepilogo</p><div class="sum-big">${eur(c.total)}<small>totale ordine</small></div>
+      <span class="pill ${d.status === 'Da ordinare' ? 'bad' : d.status === 'Arrivato' ? 'ok' : 'warn'}">${h(d.status)}</span>
+      <dl><dt>Merce (${c.pieces} pz)</dt><dd>${eur(c.goods)}</dd>
+        ${Object.keys(c.bySup).length > 1 ? `<dt class="sub-h">Merce per fornitore</dt>${Object.entries(c.bySup).map(([k, v]) => `<dt>${h((byId('suppliers', k) || {name:'Senza fornitore'}).name)} · ${v.pieces} pz</dt><dd>${eur(v.goods)}</dd>`).join('')}<dt class="sub-h">Spedizione unica</dt>` : ''}
+        <dt>Trasporto${c.tr ? ' ' + h(c.tr.name.split('·').pop().trim()) : ''} (${dec(c.weight,1)} kg)</dt><dd>${eur(c.freight)}</dd>
+        <dt>Altri costi</dt><dd>${eur(n(d.extraCost))}</dd>
+        ${c.design ? `<dt>Design (${h(c.designs.join(', '))})</dt><dd>${eur(c.design)}</dd>` : ''}
+        <dt class="tot">Totale</dt><dd class="tot">${eur(c.total)}</dd>
+        <dt>Acconto pagato</dt><dd>−${eur(n(d.deposit))}</dd>
+        <dt class="tot">Da pagare</dt><dd class="tot">${eur(c.due)}</dd></dl>
+      <div class="sum-note">${d.isSample ? (() => { const skip = [...new Set(d.items.map(it => it.pid))].map(id => byId('products', id)).filter(p => p && n(p.designCost) > 0 && designOwner(p.id, d) !== d.id);
+          const none = [...new Set(d.items.map(it => it.pid))].map(id => byId('products', id)).filter(p => p && !n(p.designCost));
+          return (skip.length ? `<span>Design già pagato in un altro campione: ${h(skip.map(p => p.name).join(', '))}.</span>` : '') + (none.length ? `<span>Senza costo di design nella scheda: ${h(none.map(p => p.name).join(', '))}.</span>` : ''); })() : ''}
+        ${c.tr && c.tr.terms === 'DDP' ? '<span>Resa DDP: dazi inclusi nel trasporto.</span>' : ''}
+        ${c.tr && c.tr.transitDays ? `<span>Tempi: ${h(c.tr.transitDays)} dalla partenza.</span>` : ''}
+        ${c.missingKg ? `<span style="color:#FF8E96">${c.missingKg} pz senza peso: il trasporto è sottostimato.</span>` : ''}
+        <span>Cambio 1 $ = ${dec(fx,4)} €.</span></div></div>`;
+  };
+  const redraw = () => { $('#pl-box').innerHTML = linesHtml(); sum(); };
+  const addLine = p => d.items.push({pid: p ? p.id : '', qty: p ? Math.max(1, n(p.lotQty) || 1) : 1, cost: p ? n(p.cost) : 0, currency: p && p.currency === 'USD' ? 'USD' : 'EUR'});
+  bindFields(panel, d, k => { if(k === 'supplier'){ if(!d.supplier && !d.freightId && S.settings.defaultFreight){ d.freightId = S.settings.defaultFreight; $('#f-freightId').value = d.freightId; } redraw(); } else sum(); });
+  const lh = e => { const el = e.target; if(!el.dataset || el.dataset.pi === undefined) return; const it = d.items[+el.dataset.pi]; if(!it) return;
+    const k = el.dataset.pk;
+    if(k === 'pid'){ if(e.type !== 'change') return; const p = byId('products', el.value); it.pid = el.value; if(p){ it.cost = n(p.cost); it.currency = p.currency === 'USD' ? 'USD' : 'EUR'; if(!n(it.qty) || it.qty === 1) it.qty = Math.max(1, n(p.lotQty) || 1); } redraw(); return; }
+    if(k === 'currency'){ it.currency = el.value; sum(); return; }
+    it[k] = n(el.value); sum(); };
+  panel.addEventListener('input', lh); panel.addEventListener('change', lh);
+  panel.querySelector('#pa-sample').addEventListener('change', e => { d.isSample = e.target.checked; sum(); });
+  panel.addEventListener('click', e => {
+    const rm = e.target.closest('[data-prm]'); if(rm){ d.items.splice(+rm.dataset.prm, 1); redraw(); return; }
+    if(e.target.closest('[data-padd]')){ addLine(d.supplier ? S.products.find(p => p.supplier === d.supplier) : null); redraw(); return; }
+    if(e.target.closest('[data-preorder]')){
+      const low = S.products.filter(p => (!d.supplier || p.supplier === d.supplier) && avail(p) + incomingQty(p.id) <= n(p.reorder ?? 5) && !d.items.some(it => it.pid === p.id));
+      low.forEach(addLine); redraw(); toast(low.length ? `${low.length} modelli aggiunti` : 'Niente da riordinare per questo fornitore');
+    }
+  });
+  if(!src) addLine(S.products.find(p => p.supplier === d.supplier));
+  redraw();
+  wireFooter(panel, {
+    onSave: async () => { d.items = d.items.filter(it => it.pid && n(it.qty) > 0); if(!d.items.length){ toast('Aggiungi almeno un modello'); return; } delete d.sample; closeSheet(); if(await saveDoc('purchases', d)) toast(d.status === 'Arrivato' ? 'Salvato: pezzi caricati in magazzino' : 'Ordine fornitore salvato'); },
+    onDelete: async () => { closeSheet(); await deleteDoc('purchases', d.id); toast('Ordine fornitore eliminato'); },
+    onDup: () => { const c = clone(d); c.id = uid('a'); c.number = nextPurchaseNumber(); c.date = today(); c.status = 'Da ordinare'; c.deposit = 0; c.expected = ''; c.isSample = false; delete c.sample; closeSheet(); saveDoc('purchases', c).then(ok => ok && openPurchase(c.id)); }
+  });
+}
+
+/* ----- Tariffa import ----- */
+function openFreight(id){
+  const src = id ? byId('freight', id) : null; sheetSrc = src;
+  const d = src ? clone(src) : {id: uid('fr'), name:'', supplier:'', usdPerKg:0, fixedEur:0, terms:'DDU', transitDays:'', notes:''};
+  const supOpts = [['','— Qualsiasi —']].concat(S.suppliers.map(f => [f.id, f.name]));
+  const panel = openSheet(`<header class="sh-head"><div><p class="eyebrow">Trasporto dalla fabbrica</p><h2>${src ? h(src.name) : 'Nuova tariffa import'}</h2></div><button class="icon-btn" data-close aria-label="Chiudi">✕</button></header>
+  <div class="sh-body"><div class="ed-grid"><div><fieldset><legend>Tariffa</legend><div class="fgrid">
+    ${fld('Nome','name',d.name,{cls:'span2', ph:'Es. Cina → Italia · nave'})}
+    ${fld('Fornitore / spedizioniere','supplier',d.supplier,{options:supOpts, cls:'span2'})}
+    ${fld('Prezzo al kg','usdPerKg',d.usdPerKg,{num:true, suf:'$/kg'})}
+    ${fld('Resa','terms',d.terms,{options:[['DDU','DDU · dazi e IVA a carico tuo'],['DDP','DDP · dazi inclusi']]})}
+    ${fld('Spese fisse per spedizione','fixedEur',d.fixedEur,{num:true, suf:'€', hint:'Sdoganamento, consegna finale; divise sui pezzi del lotto'})}
+    ${fld('Tempo di transito','transitDays',d.transitDays,{ph:'Es. 35–45 gg lavorativi'})}
+    <label class="fld span2"><span>Tratta predefinita</span><div class="check"><input type="checkbox" id="fr-default" ${S.settings.defaultFreight === d.id ? 'checked' : ''} ${readOnly?'disabled':''}><span>Usa questa tratta per tutti i modelli impostati su "automatico"</span></div></label>
+    ${fld('Note','notes',d.notes,{area:true, cls:'full'})}
+  </div></fieldset></div><aside class="ed-sum" id="fr-sum"></aside></div></div>
+  ${footer(!src, src ? 'Salva modifiche' : 'Crea tariffa')}`);
+  const sum = () => {
+    const fx = n(S.settings.usdEur) || 1, kg = n(d.usdPerKg) * fx;
+    const ex = [[0.25,'Cover'],[0.6,'Racchetta'],[1.5,'Borsa'],[10,'Collo da 10 kg']];
+    $('#fr-sum').innerHTML = `<div class="sum"><p class="eyebrow">In euro</p><div class="sum-big">${eur(kg)}<small>al kg</small></div>
+      <span class="pill ${d.terms === 'DDP' ? 'ok' : 'warn'}">${d.terms === 'DDP' ? 'Dazi inclusi' : 'Dazi esclusi'}</span>
+      <dl><dt class="sub-h">Esempi (senza spese fisse)</dt>${ex.map(([w,l]) => `<dt>${l} · ${dec(w)} kg</dt><dd>${eur(w * kg)}</dd>`).join('')}</dl>
+      <div class="sum-note"><span>${d.terms === 'DDP' ? 'Con DDP i modelli che usano questa tariffa non conteggiano i dazi.' : 'Con DDU all\'arrivo paghi dazi, IVA all\'importazione e sdoganamento. Metti i dazi % nella scheda di ogni modello e le spese fisse qui sopra.'}</span>
+      <span>Cambio 1 $ = ${dec(fx,4)} € (lo cambi in Impostazioni).</span></div></div>`;
+  };
+  bindFields(panel, d, sum); sum();
+  wireFooter(panel, {
+    onSave: async () => { if(!d.name.trim()){ toast('Dai un nome alla tariffa'); return; } delete d.sample; const def = $('#fr-default').checked; closeSheet();
+      if(def && S.settings.defaultFreight !== d.id){ S.settings.defaultFreight = d.id; saveSettings(); }
+      if(await saveDoc('freight', d)) toast('Tariffa import salvata'); },
+    onDelete: async () => { closeSheet(); await deleteDoc('freight', d.id); toast('Tariffa eliminata'); },
+    onDup: () => { const c = clone(d); c.id = uid('fr'); c.name += ' (copia)'; delete c.sample; closeSheet(); saveDoc('freight', c).then(ok => ok && openFreight(c.id)); }
+  });
+}
+
+/* ----- Ordine / preventivo ----- */
+function nextNumber(){
+  const max = S.orders.reduce((m,o) => Math.max(m, parseInt(String(o.number||'').replace(/\D/g,''),10) || 0), 0);
+  return 'TMP-' + String(max + 1).padStart(4,'0');
+}
+function openOrder(id){
+  const src = id ? byId('orders', id) : null; sheetSrc = src;
+  const d = src ? clone(src) : {id: uid('o'), number: nextNumber(), date: today(), customer:'', channel:'Squadra', status:'Preventivo', shipAuto:true, zone:'Italia', freightId:'', shipId:'', parcels:1, shipCharged:0, discountPct:0, notes:'', items:[]};
+  d.items = d.items || [];
+  d.freightId = d.freightId || ''; d.zone = d.zone || (byId('shipping', d.shipId) || {}).zone || 'Italia';
+  if(!src && S.products[0]) d.items.push({pid: S.products[0].id, qty: 1, price: n(S.products[0].price), customs: []});
+  const prodOpts = () => allCats().map(c => { const ps = S.products.filter(p => p.cat === c.id); return ps.length ? `<optgroup label="${h(c.code)} ${h(c.name)}">${ps.map(p => `<option value="${h(p.id)}">${h(p.name)} · ${eur(n(p.price))}</option>`).join('')}</optgroup>` : ''; }).join('');
+  const linesHtml = () => d.items.map((it, i) => {
+    const p = byId('products', it.pid); const cat = p ? p.cat : null;
+    const cs = S.customs.filter(c => n(c.price) > 0 && (!c.cats || !c.cats.length || c.cats.includes(cat)));
+    return `<div class="ol"><label class="fld ol-prod"><span>Modello</span><div class="inp"><select data-li="${i}" data-lk="pid" ${readOnly?'disabled':''}>${p ? '' : '<option value="">— scegli —</option>'}${prodOpts().replace(`value="${h(it.pid)}"`, `value="${h(it.pid)}" selected`)}</select></div></label>
+      <label class="fld"><span>Pezzi</span><div class="inp"><input type="number" step="1" min="0" inputmode="numeric" data-li="${i}" data-lk="qty" value="${n(it.qty)}" ${readOnly?'disabled':''}></div></label>
+      <label class="fld"><span>Prezzo/pz</span><div class="inp"><input type="number" step="any" inputmode="decimal" data-li="${i}" data-lk="price" value="${n(it.price)}" ${readOnly?'disabled':''}><span class="affix">€</span></div></label>
+      <div class="ol-tot num" id="ol-tot-${i}"></div>
+      <button class="icon-btn" data-rm="${i}" aria-label="Rimuovi riga" ${readOnly?'disabled':''}>✕</button>
+      <div class="ol-cust">${cs.length ? `<div class="mini-checks">${cs.map(c => `<label><input type="checkbox" data-li="${i}" data-lc="${h(c.id)}" ${(it.customs||[]).includes(c.id)?'checked':''} ${readOnly?'disabled':''}>${h(c.name)} <span class="muted num">+${eur(n(c.price))}</span></label>`).join('')}</div>` : '<span class="muted" style="font-size:12.5px">Nessuna personalizzazione a pagamento per questo modello.</span>'}</div></div>`;
+  }).join('') || '<p class="muted" style="margin:0">Aggiungi almeno un modello.</p>';
+  const shipOpts = [['','— Nessuna —']].concat(S.shipping.map(r => [r.id, `${r.name} · ${eur(n(r.price))} al cliente`]));
+  const panel = openSheet(`<header class="sh-head"><div><p class="eyebrow mono">${h(d.number)}</p><h2>${src ? (d.status === 'Preventivo' ? 'Preventivo' : 'Ordine') + ' ' + h(d.customer || '') : 'Nuovo preventivo'}</h2></div><button class="icon-btn" data-close aria-label="Chiudi">✕</button></header>
+  <div class="sh-body"><div class="ed-grid"><div><div class="mini-sum" id="mini-sum"></div>
+    <fieldset><legend>Cliente</legend><div class="fgrid">
+      ${fld('Cliente / squadra','customer',d.customer,{cls:'span2', ph:'Es. ASD Nome squadra'})}
+      ${fld('Data','date',d.date,{type:'date'})}
+      ${fld('Canale','channel',d.channel,{options:CHANNELS.map(c=>[c,c])})}
+      ${fld('Stato','status',d.status,{options:STATUSES.map(s=>[s,s])})}
+    </div></fieldset>
+    <fieldset><legend>Articoli</legend><div id="ol-box">${linesHtml()}</div>
+      <div class="actions" style="margin-top:12px"><button class="btn sm" data-add-line ${readOnly?'disabled':''}>+ Aggiungi modello</button></div>
+      <p class="help">Prezzo per pezzo IVA inclusa, già scontato se fai un prezzo squadra. Le personalizzazioni spuntate si applicano a tutti i pezzi della riga; l'impianto viene conteggiato una volta.</p></fieldset>
+    <fieldset><legend>Trasporto dalla fabbrica</legend><div class="fgrid">
+      ${fld('Tratta import per questo ordine','freightId',d.freightId,{options:[['','Quella di ogni modello']].concat(S.freight.map(f => [f.id, `${f.name} · ${dec(n(f.usdPerKg))} $/kg · ${f.transitDays || ''}`])), cls:'full', hint:'Es. aereo per un ordine urgente: ricalcola il trasporto sul peso dei pezzi'})}
+      <div class="full" id="imp-info"></div>
+    </div></fieldset>
+    <fieldset><legend>Spedizione al cliente e sconto</legend><div class="fgrid">
+      <label class="fld full"><span>Calcolo</span><div class="check"><input type="checkbox" id="ship-auto" ${d.shipAuto !== false ? 'checked' : ''} ${readOnly?'disabled':''}><span>Automatico dal peso: sceglie la tariffa e i colli nella zona, gratis sopra ${eur(n(S.settings.freeShipOver))}</span></div></label>
+      ${fld('Zona','zone',d.zone,{options:ZONES.map(z => [z,z])})}
+      <div class="span2 ship-man" ${d.shipAuto !== false ? 'hidden' : ''}>${fld('Tariffa','shipId',d.shipId,{options:shipOpts})}</div>
+      <div class="ship-man" ${d.shipAuto !== false ? 'hidden' : ''}>${fld('Colli','parcels',d.parcels,{num:true, suf:'n.'})}</div>
+      <div class="ship-man" ${d.shipAuto !== false ? 'hidden' : ''}>${fld('Spedizione addebitata','shipCharged',d.shipCharged,{num:true, suf:'€', hint:'Quanto paga il cliente'})}</div>
+      ${fld('Sconto','discountPct',d.discountPct,{num:true, suf:'%', hint:'Sulla merce'})}
+      ${fld('Note','notes',d.notes,{area:true, cls:'full'})}
+    </div></fieldset>
+  </div><aside class="ed-sum" id="o-sum"></aside></div></div>
+  ${footer(!src, src ? 'Salva modifiche' : 'Crea preventivo')}`);
+  const sum = () => {
+    const c = orderCalc(d);
+    if(c.auto){ d.shipId = c.rate ? c.rate.id : ''; d.parcels = c.parcels; d.shipCharged = c.shipCharged; }
+    const tr = c.importRate || byId('freight', S.settings.defaultFreight);
+    $('#imp-info').innerHTML = `<p class="help" style="margin:0">Peso ordine <b class="num">${dec(c.weight)} kg</b> · trasporto import <b class="num">${eur(c.importFreight)}</b> (già nel costo merce)${c.importFreight > 0 && tr && tr.transitDays ? ` · arrivo ${h(tr.transitDays)} dalla partenza` : ''}${c.missingKg ? ` · <span style="color:var(--bad)">${c.missingKg} pz senza peso: inseriscilo nella scheda del modello</span>` : ''}</p>`;
+    c.lines.forEach((l, i) => { const el = $('#ol-tot-' + i); if(el) el.innerHTML = `<small>${eur(l.unitFull)}/pz</small>${eur(l.gross)}`; });
+    const free = n(S.settings.freeShipOver) > 0 && (c.sub - c.discount) >= n(S.settings.freeShipOver);
+    $('#mini-sum').innerHTML = `<div><small>Totale</small><b>${eur(c.total)}</b></div><div><small>Utile</small><b class="${c.profit<0?'neg':'pos'}">${eur(c.profit)}</b></div><div><small>Margine</small><b>${pct(c.margin)}</b></div><button type="button" data-jump="o-sum">Riepilogo completo ↓</button>`;
+    $('#o-sum').innerHTML = `<div class="sum"><p class="eyebrow">Riepilogo</p><div class="sum-big">${eur(c.total)}<small>totale cliente</small></div>
+      <span class="pill ${c.profit<0?'bad':(c.margin < n(S.settings.targetMargin)/100 ? 'warn':'ok')}">Margine ${pct(c.margin)}</span>
+      <dl><dt class="sub-h">Cliente paga</dt>
+        <dt>Merce</dt><dd>${eur(c.goods)}</dd><dt>Personalizzazioni</dt><dd>${eur(c.custGross)}</dd>
+        ${c.discount ? `<dt>Sconto ${dec(n(d.discountPct),1)}%</dt><dd>−${eur(c.discount)}</dd>` : ''}
+        <dt>Spedizione</dt><dd>${eur(c.shipCharged)}</dd>
+        <dt class="tot">Totale IVA incl.</dt><dd class="tot">${eur(c.total)}</dd>
+        <dt>di cui IVA</dt><dd>${eur(c.vat)}</dd><dt>Imponibile</dt><dd>${eur(c.net)}</dd>
+        <dt class="sub-h">Tuoi costi</dt>
+        <dt>Merce (costo pieno)</dt><dd>${eur(c.goodsCost)}</dd><dt>Personalizzazioni + impianti</dt><dd>${eur(c.custCost)}</dd>
+        <dt>Corriere${c.rate ? ` (${h(c.rate.name)}${c.parcels > 1 ? ' × ' + c.parcels : ''})` : ''}</dt><dd>${eur(c.shipCost)}</dd><dt>Commissioni pagamento</dt><dd>${eur(c.fees)}</dd>
+        <dt class="tot">Utile netto</dt><dd class="tot ${c.profit<0?'neg':'pos'}">${eur(c.profit)}</dd></dl>
+      <div class="sum-note"><span>${c.pieces} pezzi · media <b>${eur(c.pieces ? c.total / c.pieces : NaN)}</b> a pezzo per il cliente.</span>
+      ${free ? `<span>Sopra la soglia di ${eur(n(S.settings.freeShipOver))}: puoi offrire la spedizione gratis.</span>` : ''}</div></div>`;
+  };
+  const redrawLines = () => { $('#ol-box').innerHTML = linesHtml(); sum(); };
+  bindFields(panel, d, (k) => {
+    sum();
+  });
+  const lineHandler = e => {
+    const el = e.target; if(!el.dataset || el.dataset.li === undefined) return;
+    const it = d.items[+el.dataset.li]; if(!it) return;
+    if(el.dataset.lc){ if(e.type !== 'change') return; it.customs = el.checked ? [...new Set((it.customs||[]).concat(el.dataset.lc))] : (it.customs||[]).filter(x => x !== el.dataset.lc); sum(); return; }
+    const k = el.dataset.lk;
+    if(k === 'pid'){ if(e.type !== 'change') return; it.pid = el.value; const p = byId('products', it.pid); it.price = p ? n(p.price) : 0; it.customs = []; redrawLines(); return; }
+    it[k] = n(el.value); sum();
+  };
+  panel.querySelector('#ship-auto').addEventListener('change', e => {
+    d.shipAuto = e.target.checked; panel.querySelectorAll('.ship-man').forEach(x => x.hidden = d.shipAuto);
+    if(!d.shipAuto){ $('#f-shipId').value = d.shipId; $('#f-parcels').value = d.parcels; $('#f-shipCharged').value = d.shipCharged; }
+    sum();
+  });
+  panel.addEventListener('input', lineHandler);
+  panel.addEventListener('change', lineHandler);
+  panel.addEventListener('click', e => {
+    const rm = e.target.closest('[data-rm]'); if(rm){ d.items.splice(+rm.dataset.rm, 1); redrawLines(); return; }
+    if(e.target.closest('[data-add-line]')){ const p = S.products[0]; d.items.push({pid: p ? p.id : '', qty: 1, price: p ? n(p.price) : 0, customs: []}); redrawLines(); }
+  });
+  sum();
+  wireFooter(panel, {
+    onSave: async () => { if(!d.customer.trim()){ toast('Scrivi il nome del cliente'); $('#f-customer').focus(); return; } d.items = d.items.filter(it => it.pid); delete d.sample; closeSheet(); if(await saveDoc('orders', d)) toast(d.status === 'Preventivo' ? 'Preventivo salvato' : 'Ordine salvato'); },
+    onDelete: async () => { closeSheet(); await deleteDoc('orders', d.id); toast('Eliminato'); },
+    onDup: () => { const c = clone(d); c.id = uid('o'); c.number = nextNumber(); c.date = today(); c.status = 'Preventivo'; delete c.sample; closeSheet(); saveDoc('orders', c).then(ok => { if(ok){ toast('Duplicato come nuovo preventivo'); openOrder(c.id); } }); }
+  });
+}
+
+boot();
+</script>
+<!-- APP:END -->
+</body>
+</html>
