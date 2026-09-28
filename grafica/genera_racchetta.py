@@ -4,7 +4,17 @@ from shapely.ops import unary_union
 from shapely import affinity
 m=cv2.imread('mask110.png',0)
 Y0,Y1=65,705                       # top of head, butt end in the photo (px)
-SX,SY=260/381, 460/(Y1-Y0)          # px -> mm (width 260, length 460)
+SX=SY=260/381                       # one scale for head+bridge: shape identical to the photo
+YH=392; KH=(460-(YH-Y0)*SY)/(Y1-YH)  # handle stretched to 460 mm total (photo foreshortens it)
+def polar_sym(mask, cx, cy, sigma=8.0):
+    cs,_=cv2.findContours(mask,cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_NONE)
+    c=max(cs,key=cv2.contourArea)[:,0,:].astype(float)
+    a=np.arctan2(c[:,1]-cy,c[:,0]-cx); rr=np.hypot(c[:,0]-cx,c[:,1]-cy); o=np.argsort(a)
+    th=np.radians(np.arange(-180,180,0.5)); r=np.interp(th,a[o],rr[o],period=2*np.pi)
+    r=(r+np.interp(np.arctan2(np.sin(th),-np.cos(th)),th,r,period=2*np.pi))/2
+    k=np.exp(-0.5*(np.arange(-24,25)/sigma)**2); k/=k.sum()
+    r=np.convolve(np.concatenate([r[-24:],r,r[:24]]),k,mode='valid')
+    return Polygon([(float(q*np.cos(t)),float(cy+q*np.sin(t))) for q,t in zip(r,th)]).buffer(0)
 # --- head outline: polar contour around the head centre, mirrored and smoothed
 hm=m.copy(); hm[425:]=0
 cs,_=cv2.findContours(hm,cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_NONE)
@@ -34,23 +44,23 @@ head=outline.intersection(box(-300,0,300,425))
 # slot (crescent) under the face and triangular opening in the bridge
 def quad(p0,p1,p2,n=40):
     return [((1-t)**2*p0[0]+2*(1-t)*t*p1[0]+t*t*p2[0],(1-t)**2*p0[1]+2*(1-t)*t*p1[1]+t*t*p2[1]) for t in np.linspace(0,1,n)]
-top=quad((-90,392),(0,404),(90,392)); bot=quad((90,392),(0,432),(-90,392))
+top=quad((-88,392),(0,400),(88,392)); bot=quad((88,392),(0,424),(-88,392))
 slot=Polygon(top+bot[1:-1]).buffer(2.5,join_style=1)
-tri=Polygon([(-37,448),(37,448),(3,496)]).buffer(-9,join_style=1).buffer(9,join_style=1)
-tri=affinity.translate(tri,-1.5,0)
-face=head.buffer(-10,join_style=1).difference(Polygon(quad((-120,388),(0,398),(120,388))+[(120,450),(-120,450)]).buffer(0))
-face=face.buffer(-1).buffer(1)
+tri=Polygon([(-42,443),(42,443),(0,500)]).buffer(-8,join_style=1).buffer(8,join_style=1)
+tri=tri
+carb=cv2.imread('carbon.png',0)
+face=polar_sym(carb,219.5,230.0,6.0).intersection(box(-300,0,300,387)).buffer(3,join_style=1).buffer(-3,join_style=1)
 frame=outline.difference(slot).difference(tri)
 # holes: 8 rows, symmetric grid measured on the photo
 rows=[(129,6),(155,8),(181,10),(207,10),(233,10),(260,10),(288,8),(316,6)]
 holes=[((k-(n-1)/2)*30.2,y) for y,n in rows for k in range(n)]
 print('holes',len(holes))
-T=lambda x,y:(130+x*SX,(y-Y0)*SY)
+T=lambda x,y:(130+x*SX,(y-Y0)*SY if y<=YH else (YH-Y0)*SY+(y-YH)*KH)
 def gpath(geom):
     if geom.geom_type=='MultiPolygon': return ' '.join(gpath(g) for g in geom.geoms)
     r=lambda cs:'M'+' L'.join('%.2f,%.2f'%T(x,y) for x,y in list(cs)[:-1])+' Z'
     return r(geom.exterior.coords)+' '+' '.join(r(i.coords) for i in geom.interiors)
-HR=4.5
+HR=5.5
 hole_mm=[T(x,y) for x,y in holes]
 circ=lambda x,y:f'M{x-HR:.2f},{y:.2f} a{HR},{HR} 0 1,0 {2*HR},0 a{HR},{HR} 0 1,0 {-2*HR},0 Z'
 holes_d=' '.join(circ(x,y) for x,y in hole_mm)
@@ -72,7 +82,7 @@ def svg(color):
     '<rect width="9" height="9" fill="#18181b"/><rect width="9" height="0.9" fill="#34343a"/></pattern></defs>']
     o.append(f'<g id="Telaio"><path d="{gpath(frame)} {holes_d}" fill-rule="evenodd" {st("#111113")}/></g>')
     o.append(f'<g id="Piatto_carbonio_18K"><path d="{gpath(face)} {holes_d}" fill-rule="evenodd" '+('fill="url(#carbon18k)"' if color else st(''))+'/></g>')
-    o.append('<g id="Fori_68_diam9">'+''.join(f'<circle cx="{x:.2f}" cy="{y:.2f}" r="{HR}" '+('fill="none" stroke="#000" stroke-width="0.3"' if color else st(''))+'/>' for x,y in hole_mm)+'</g>')
+    o.append('<g id="Fori_68_diam11">'+''.join(f'<circle cx="{x:.2f}" cy="{y:.2f}" r="{HR}" '+('fill="none" stroke="#000" stroke-width="0.3"' if color else st(''))+'/>' for x,y in hole_mm)+'</g>')
     o.append(f'<g id="Impugnatura"><rect x="{130-gw:.2f}" y="{grip_top:.2f}" width="{2*gw:.2f}" height="{grip_bot-grip_top:.2f}" rx="4" '+('fill="url(#overgrip)"' if color else st(''))+'/></g>')
     o.append(f'<g id="Vista_laterale_38mm"><path d="{sp(side)}" {st("#111113")}/></g>')
     q='#E5502A'; t=lambda x,y,s,a="middle":f'<text x="{x}" y="{y}" font-family="Space Mono, monospace" font-size="6" fill="{q}" text-anchor="{a}">{s}</text>'
@@ -82,7 +92,7 @@ def svg(color):
       f'<text x="-8.5" y="230" font-family="Space Mono, monospace" font-size="6" fill="{q}" text-anchor="middle" transform="rotate(-90 -8.5 230)">460 mm</text>'
       f'<line x1="{SXo}" y1="-6" x2="{SXo+38}" y2="-6" stroke="{q}"/>'+t(SXo+19,-8.5,"38 mm")+
       t(195,420,"TEMPRA PD·01 · mod. 4054","start")+t(195,428,"Goccia · carbonio 18K · EVA 17 nera","start")+
-      t(195,436,"68 fori Ø 9 mm · 355 ± 10 g","start")+t(195,444,"Bilanciamento medio · scala 1:1","start")+'</g></svg>')
+      t(195,436,"68 fori Ø 11 mm · 355 ± 10 g","start")+t(195,444,"Bilanciamento medio · scala 1:1","start")+'</g></svg>')
     return '\n'.join(o)
 open('/home/user/campo/grafica/racchetta-pd01-4054.svg','w').write(svg(True))
 open('/home/user/campo/grafica/racchetta-pd01-4054-linee.svg','w').write(svg(False))
